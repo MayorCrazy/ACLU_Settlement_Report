@@ -1,0 +1,771 @@
+---
+title:  "`r knitr::include_graphics('DBHIDS-logos.png')`  \n &nbsp;  \n &nbsp;  \nDBHIDS Support for the Commonwealths Response to ACLU Litigation"
+author: MONTHLY SNAPSHOT OF 
+date: "`r enddt<-'2020-09-30'
+        format(as.Date(enddt), '%B %Y')`" 
+output: 
+     word_document:
+       reference_docx: MonthlyForensicStyle.docx
+       toc: yes
+       toc_depth: 2
+
+---
+```{r echo=FALSE, message=FALSE, warning=FALSE,fig.width=2, fig.height=1.5}
+
+library(odbc)
+library(reshape2)
+library(dplyr)
+library(openxlsx)
+library(ggplot2)
+library(lubridate)
+library(tidyr)
+library(gridExtra)
+library(flextable)
+library(png)
+library(knitr)
+library(grid)
+library(ggpubr)
+library(gdtools)
+library(webshot)
+library(magick)
+library(ggpmisc)
+
+```
+
+```{=openxml}
+<w:p><w:r><w:br w:type="page"/></w:r></w:p>
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+enddt<-'2020-09-30'
+################### Connection to CCS ############################
+con <- dbConnect(odbc(), Driver = "SQL Server", Server = "SQL-HQ", 
+                 Database = "SCCJU", Trusted_Connection = "True")
+ACLUAll <- dbGetQuery(con," 
+SELECT 
+     c.ClientID#
+     ,c.LastName
+	   ,c.FirstName
+	   ,g.genderName
+	   ,c.DOB
+	   ,c.SS# as 'SSN'
+	   ,c.PP# as 'PID'
+	   ,c.SID
+	   ,[r].[desc] as 'Race'
+	   ,e.ethnicity_Name as 'Ethnicity'
+	   ,wl.commitmentDate
+	   ,wl.requestedDate
+	   ,wl.referralDate
+	   ,wld.waitListEffDate
+	   ,wl.waitlistPosition
+	   ,wl.remHoldDate
+	   ,rtype.removeHoldTypeName
+	   
+from tblClient as c
+	left join tblISTwaitlistEntry as wl on wl.ClientID = c.ClientID#
+	join tblISTwaitList as wld on wld.ISTwaitListID = wl.ISTwaitListID
+	left join tblGender as g on g.genderID =c.Sex
+	left join tblRace as r on r.ID = c.Race
+	left join tblEthnicity as e on e.ethnicityID = c.ethnicityID
+	left join tblISTwaitlistRemoveHoldType as rtype on rtype.removeHoldTypeID=wl.removeHoldTypeID
+
+	Union
+select 
+      c.ClientID#
+     ,c.LastName
+	   ,c.FirstName
+	   ,g.genderName
+	   ,c.DOB
+	   ,c.SS# as 'SSN'
+	   ,c.PP# as 'PID'
+	   ,c.SID
+	   ,[r].[desc] as 'Race'
+	   ,e.ethnicity_Name as 'Ethnicity'
+	   ,archive.commitmentDate
+	   ,archive.requestDate
+	   ,archive.referralDate
+	   ,archive.waitListEffDate
+	   ,archive.waitlistPosition
+	   ,archive.remHoldDate
+	   ,rtype.removeHoldTypeName
+
+from tblClient as c 
+join ISTWaitlistArchive as archive on archive.ClientID = c.ClientID#
+left join tblGender as g on g.genderID =c.Sex
+left join tblRace as r on r.ID = c.Race
+left join tblEthnicity as e on e.ethnicityID = c.ethnicityID
+left join tblISTwaitlistRemoveHoldType as rtype on rtype.removeHoldTypeID = archive.removeHoldTypeName
+
+WHERE c.deleted=0 AND c.LastName NOT LIKE '%test%'
+order by referralDate, c.LastName
+
+")
+
+##################### Current WL ######################
+ACLUAll[,11]<- as.Date(ACLUAll[,11])
+ACLUAll[,12]<- as.Date.factor(ACLUAll[,12])
+ACLUAll[,13]<- as.Date.factor(ACLUAll[,13])
+ACLUAll[,14]<- as.Date.factor(ACLUAll[,14])
+ACLUAll[,16]<- as.Date.factor(ACLUAll[,16])
+
+
+ACLUAll <- ACLUAll[which(ACLUAll$waitListEffDate <=enddt),]
+WLDate <- max(ACLUAll$waitListEffDate)
+
+CurrentWL <-ACLUAll[which(ACLUAll$waitListEffDate == WLDate),]
+
+
+AllWLDates <- ACLUAll %>% group_by(waitListEffDate) %>% summarise(n=n_distinct(`ClientID#`))
+AllWLDates <- subset.data.frame(AllWLDates, select=-2)
+AllWLDates$Qtr <-0
+AllWLDates$Qtr<- quarter(AllWLDates$waitListEffDate)
+AllWLDates$Year<- year(AllWLDates$waitListEffDate)
+AllWLDates$YearQtr <-paste0(year(AllWLDates$waitListEffDate), " Q", quarter(AllWLDates$waitListEffDate))
+
+#Active Female
+WLCFem<-count(CurrentWL[which(CurrentWL$genderName=="Female" &
+                                is.na(CurrentWL$removeHoldTypeName) ==TRUE)
+                        ,])
+#Active Male
+WLCMal<-count(CurrentWL[which(CurrentWL$genderName=="Male" &
+                                is.na(CurrentWL$removeHoldTypeName) ==TRUE)
+                        ,])
+WLCTot<-count(CurrentWL[which((CurrentWL$genderName=="Male" &
+                                 is.na(CurrentWL$removeHoldTypeName)==TRUE) |
+                                (CurrentWL$genderName=="Female" &
+                                   is.na(CurrentWL$removeHoldTypeName))==TRUE)
+                        ,])
+WaitListIntro<- paste0("Effective 3/13/20, Governor Wolf placed a hold on all NSH admissions and discharges due to the spread of COVID-19. On May 19, 2020, NSH distributed an email which provided its plan to to resume admissions during the week of June 1, 2020. The plan included the COVID 19 DHS Protocol for State
+Facilities Admissions. ","As of ",format(as.Date(WLDate), '%m/%d/%y'), " Philadelphia's Forensic Waitlist for NSH stands at ",WLCTot,". The waitlist is composed of ",WLCFem," Females and ",WLCMal," Males.")
+```
+# Section 1: NSH Movement 
+## Philadelphia Waitlist
+`r WaitListIntro`
+
+```{r echo=FALSE, message=FALSE, warning=FALSE,fig.width=10, fig.height=4.6}
+
+#Removed current WL
+WLCRem<-count(CurrentWL[which(is.na(CurrentWL$removeHoldTypeName) !=TRUE),])
+WLCRemoveTyp<-CurrentWL %>% group_by(removeHoldTypeName) %>% summarise(n= n_distinct(`ClientID#`))
+
+#Removed by Type All Time
+WLARemoveTyp<-ACLUAll %>% group_by(removeHoldTypeName) %>% tally()#summarise(n= n_distinct(`ClientID#`))
+
+############# Average WL Census for each Quarter with Plot ##############
+
+WLADates<- ACLUAll[which((ACLUAll$genderName=="Male" &
+                                              is.na(ACLUAll$removeHoldTypeName)==TRUE) |
+                                             (ACLUAll$genderName=="Female" &
+                                                is.na(ACLUAll$removeHoldTypeName))==TRUE)
+                   ,]
+WLAAverage = data.frame()                              
+WLAAverage <- WLADates %>% group_by(waitListEffDate) %>% summarise(Total=n_distinct(`ClientID#`))
+WLAAverage <- merge.data.frame(AllWLDates,WLAAverage, all.x = TRUE)
+WLAAverage$Total[is.na(WLAAverage$Total)==TRUE]<- 0
+WLAAverage<- WLAAverage %>% group_by(YearQtr)%>%summarise(Average=mean(Total))
+PlotWLAvTitle<- paste0("Average Waitlist for Philadelphia by Quarter",
+                       "\n01/27/16 to ",format(WLDate,"%m/%d/%y"))
+
+PlotWLAverage<-ggplot(WLAAverage, aes(WLAAverage$YearQtr,WLAAverage$Average, group = 1)) +
+geom_line(color="blue")+
+  geom_text(aes(label=round(WLAAverage$Average)),position=position_dodge(width=1),vjust=-.5,color = "Blue4")+
+  ggtitle(PlotWLAvTitle)+
+  xlab("Average Waitlist Count")+ylab("Philadelphians")+
+theme_minimal() +
+  theme(plot.title=element_text( hjust=.5, vjust=0.5, face='bold'))
+WLAverageFig<-paste0("Figure 1. Average number of Philadelphians on the NSH waitlist by quarter from 01/27/16 to ",format(WLDate,"%m/%d/%y"),".")
+PlotWLAverage
+```
+
+### `r WLAverageFig`
+
+```{r echo=FALSE, message=FALSE, warning=FALSE,fig.width=10, fig.height=4.6}
+
+################### 3 month WL Histogram #################
+WL3Months<- ACLUAll[which(ACLUAll$remHoldDate>=as.Date(enddt)-90 &
+                            ACLUAll$remHoldDate<=as.Date(enddt) &
+                            ACLUAll$removeHoldTypeName =="Admit to NSH"
+                          ),]
+WL3Months$WaitTime<-0
+WL3Months$WaitTime[]<-WL3Months$remHoldDate - WL3Months$commitmentDate
+
+WL3Months$Buckets<-0  
+WL3Months$Buckets[]<-case_when(WL3Months$WaitTime<=7~"0-7",
+                               WL3Months$WaitTime>7&WL3Months$WaitTime<15~"8-14",
+                               WL3Months$WaitTime>14&WL3Months$WaitTime<31~"15-30",
+                               WL3Months$WaitTime>30&WL3Months$WaitTime<61~"31-60",
+                               WL3Months$WaitTime>60&WL3Months$WaitTime<91~"61-90",
+                               WL3Months$WaitTime>90&WL3Months$WaitTime<181~"91-180",
+                               WL3Months$WaitTime>180~"180+"
+                              )
+#WL3Months$Buckets<- as.character.factor(WL3Months$Buckets)
+WL3Months$C<-0
+WL3Months$C[]<-case_when(WL3Months$Buckets=="0-7"~length(which(WL3Months$WaitTime<=7)),
+                               WL3Months$Buckets=="8-14"~length(which(WL3Months$WaitTime>7&WL3Months$WaitTime<15)),
+                               WL3Months$Buckets=="15-30"~length(which(WL3Months$WaitTime>14&WL3Months$WaitTime<31)),
+                               WL3Months$Buckets=="31-60"~length(which(WL3Months$WaitTime>30&WL3Months$WaitTime<61)),
+                               WL3Months$Buckets=="61-90"~length(which(WL3Months$WaitTime>60&WL3Months$WaitTime<91)),
+                               WL3Months$Buckets=="91-180"~length(which(WL3Months$WaitTime>90&WL3Months$WaitTime<181)),
+                               WL3Months$Buckets=="180+"~length(which(WL3Months$WaitTime>180))
+                        )
+
+WL3Months$Buckets<- factor(WL3Months$Buckets,levels = c("0-7","8-14","15-30","31-60","61-90","91-180","180+"))
+
+
+mean<-round(sum(WL3Months$WaitTime)/length(WL3Months$WaitTime),digits = 2)
+med<-median(sort(WL3Months$WaitTime))
+Mxwl<-max(WL3Months$WaitTime)
+Mnwl<-min(WL3Months$WaitTime)
+
+WLTable = data.frame(matrix(nrow=4, ncol=2))
+colnames(WLTable)<-c("Waits","n")
+WLTable$Waits<-c("Mean","Mediam","Min","Max")
+WLTable$n<-c(mean,med,Mnwl,Mxwl)
+PlotWLWaitTitle<- paste0("Days Between Commitment and Admission to NSH",
+                       "\n",format(WLDate-90,"%m/%d/%y")," to ",format(WLDate,"%m/%d/%y"))
+
+PlotWLWait<-ggplot(data=WL3Months,aes(x=Buckets,y=C, fill = Buckets))+
+  labs(fill="Grouping")+
+  geom_bar(position='dodge', stat='identity',color='gray1')+ 
+  geom_text(aes(label=C),position=position_dodge(width=0.9),vjust=-.5)+
+    scale_fill_brewer(palette="Greens")+
+  ggtitle(PlotWLWaitTitle)+
+  xlab("Days on Waitlist")+ylab("Philadelphians")+
+  theme_minimal() +
+  theme(plot.title=element_text( hjust=.5, vjust=0.5, face='bold'))+
+  annotate(geom="table", x=7, y=1.5, label = list(WLTable),vjust=-2,hjust=0.5)
+  
+WLWaitFig<-paste0(" Figure 2. Commitment to admission times from ",format(WLDate-90,"%m/%d/%y")," to ",format(WLDate,"%m/%d/%y")," (last 3 months).")
+
+
+PlotWLWait
+```
+
+### `r WLWaitFig` ^[1 In November of 2019, Figure 2 shortened each grouping to account for the substantial decrease in admission wait times. The date range was also adjusted down from 6 months to 3, to better identify more recent trends in waitlist movement.]
+```{=openxml}
+<w:p><w:r><w:br w:type="page"/></w:r></w:p>
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+############################## All WL removals#################
+
+ALLWLRemovals <-ACLUAll[which(is.na(ACLUAll$remHoldDate)==FALSE &
+                                is.na(ACLUAll$removeHoldTypeName)==FALSE &
+                                ACLUAll$remHoldDate>="2016-01-27" &
+                                ACLUAll$remHoldDate<=enddt
+                              ),]
+
+ALLWLRemovals<-merge.data.frame(ALLWLRemovals,AllWLDates, all.x = TRUE)
+NSHAdmitts<-ALLWLRemovals[which(ALLWLRemovals$removeHoldTypeName=="Admit to NSH"),]
+
+NSHAdmitts<- NSHAdmitts %>% group_by(YearQtr) %>% summarise(n= n_distinct(`ClientID#`))
+RemTotals<- ALLWLRemovals %>% group_by(YearQtr) %>% summarise(n= n_distinct(`ClientID#`))
+
+ALLWLRemovals<-merge.data.frame(ALLWLRemovals, RemTotals)
+
+
+
+################ Get NSH DC Data and Plot Admits and Discharges ###########################
+ALLDC<- dbGetQuery(con,"
+select 
+ c.ClientID# as 'ClientID'
+,c.LastName
+,c.FirstName 
+,c.PP# as 'PID'
+,c.SS# as 'SSN'
+,ht.FldHousingName 'NSHLoc'
+,he.fldEntrydateofhousing as 'Admission'
+,he.[fldDischargeDate/Max-out] as 'Discharge'
+
+
+from tblClient as c
+join tblHousingEvents as he on he.fldClientID# = c.ClientID#
+join tblHousingType as ht on ht.fldHousingLocationID# = he.fldHousingLocationID#
+
+Where
+c.deleted !=1 
+
+Order by c.ClientID#, he.fldEntrydateofhousing asc
+")
+
+#sets DC range after or equal to Start date with keeping all NA's 
+ALLDC<-ALLDC[which(ALLDC$Discharge >= '2016-01-27' |
+                     is.na(ALLDC$Discharge)==TRUE
+                  ),]
+#Self Joining by discharges to admissions
+ALLDC<- merge.data.frame(ALLDC,ALLDC, by.x=c("ClientID", "Discharge"), by.y = c("ClientID","Admission"), all.x=TRUE)
+
+#Find discharges from NSH
+NSHDC<-ALLDC %>% filter(grepl('^NSH.*',ALLDC$NSHLoc.x))
+
+#Find Not Admissions to NSH 
+NSHDC<-NSHDC %>% filter(!grepl('^NSH.*',NSHDC$NSHLoc.y))
+
+#Remove everyone with no NSH Discharge
+NSHDC<-NSHDC[which(is.na(NSHDC$Discharge)==FALSE),]
+#Remove any DC's after enddate
+NSHDC<-NSHDC[which(NSHDC$Discharge<=enddt),]
+
+
+
+NSHDC$YearQtr <-paste0(year(NSHDC$Discharge), " Q", quarter(NSHDC$Discharge))
+NSHDischarges<-NSHDC
+
+NSHDC <- NSHDC %>% group_by(YearQtr) %>% tally()#summarise(Total=n_distinct(ClientID))
+
+#NSHDC<-NSHDC[-c(nrow(NSHDC)),]
+PlotNSHMovTitle<- paste0("NSH Admissions and Discharges by Quarter",
+                         "\n01/27/16 to ",format(WLDate,"%m/%d/%y"))
+
+PlotNSHMovement<-ggplot()+
+  geom_line(data=NSHAdmitts,aes(x=NSHAdmitts$YearQtr,y=NSHAdmitts$n, color="Red3"),group=1)+
+  geom_text(aes(x=NSHAdmitts$YearQtr,y=NSHAdmitts$n,label=NSHAdmitts$n),position=position_dodge(width=1),vjust=-.7,hjust=-.3,color = "Blue4")+
+  
+  geom_line(data=NSHDC,aes(x=NSHDC$YearQtr,y=NSHDC$n,color="Blue3"),group=1)+
+  geom_text(aes(x=NSHDC$YearQtr,y=NSHDC$n,label=NSHDC$n),position=position_dodge(width=1),vjust=-.5,hjust=.8,color = "Red4")+
+  ggtitle(PlotNSHMovTitle)+
+  xlab("Average Waitlist Count")+ylab("Philadelphians")+
+  theme_minimal() +
+  theme(plot.title=element_text( hjust=.5, vjust=0.5, face='bold'))+
+  scale_color_discrete(name="Movement", labels = c("Discharges","Admissions"))+
+  geom_segment(data=NSHAdmitts,aes(x='2018 Q1', y=46,xend='2018 Q2',yend=90))+
+  geom_segment(data=NSHAdmitts,aes(x='2019 Q2', y=102,xend='2018 Q4',yend=100))+
+  geom_text(aes(x='2018 Q3',y=96),label="State added beds\nduring these periods",size=3)
+
+
+NSHMoveIntro<-paste0("As of ",format(as.Date(WLDate), '%m/%d/%y')," ",sum(NSHDC$n)," Philadelphians have been discharged from NSH while ",sum(NSHAdmitts$n)," were admitted to NSH from the waitlist at PDP with 3 additional Philadelphians admitted from other sources.","On 3/12/20, Governor Wolf placed a hold on all NSH Admissions and discharges due to COVID-19. On 4/14/20, community discharges resumed for individuals to a home or residential progam.")
+
+```
+## Philadelphians Admitted to and Discharged from NSH
+`r NSHMoveIntro`
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.width=10, fig.height=5.1}
+NSHDCSummaryFig<-paste0("Figure 3. Total NSH discharges and NSH admissions from 01/27/16 to ",format(WLDate,"%m/%d/%y"),".")
+PlotNSHMovement
+
+```
+
+### `r NSHDCSummaryFig`
+
+```{r echo=FALSE, message=FALSE, warning=FALSE,fig.width=10, fig.height=3}
+#################### NSH Discharges by Location #######################
+NSHForensic <- NSHDischarges[which(NSHDischarges$NSHLoc.x =="NSH - Forensic"&
+                                   is.na(NSHDischarges$Discharge) == FALSE &
+                                     startsWith(NSHDischarges$NSHLoc.y,'NSH')==FALSE &
+                                     startsWith(NSHDischarges$NSHLoc.y,'SCI')==FALSE &
+                                     is.na(NSHDischarges$NSHLoc.y) == FALSE &
+                                     NSHDischarges$NSHLoc.y!="DECEASED" &
+                                     NSHDischarges$NSHLoc.y!="homeless" &
+                                     NSHDischarges$NSHLoc.y!="Carelink - STAR I"& 
+                                     NSHDischarges$NSHLoc.y!="Nursing Home"&
+                                     NSHDischarges$NSHLoc.y!="George W. Hill Correctional Facility"&
+                                     NSHDischarges$NSHLoc.y!="Danville State Hospital"
+
+                                   ),]
+NSHForensic$Community<-NA
+NSHForensic$Community<- case_when(NSHForensic$NSHLoc.y!="Philadelphia County Jail"~"Community",
+                                  TRUE~"PDP")
+
+NSHCivil <- NSHDischarges[which(NSHDischarges$NSHLoc.x !="NSH - Forensic"&
+                                is.na(NSHDischarges$Discharge) == FALSE &
+                                  startsWith(NSHDischarges$NSHLoc.y,'NSH')==FALSE &
+                                  startsWith(NSHDischarges$NSHLoc.y,'SCI')==FALSE &
+                                  is.na(NSHDischarges$NSHLoc.y) == FALSE &
+                                  NSHDischarges$NSHLoc.y!="DECEASED" &
+                                  NSHDischarges$NSHLoc.y!="homeless" &
+                                  NSHDischarges$NSHLoc.y!="Carelink - STAR I"& 
+                                  NSHDischarges$NSHLoc.y!="Nursing Home"&
+                                  NSHDischarges$NSHLoc.y!="George W. Hill Correctional Facility"&
+                                  NSHDischarges$NSHLoc.y!="Danville State Hospital"&
+                                NSHDischarges$NSHLoc.y!="NSHDischarges"&
+                                NSHDischarges$NSHLoc.y!="South Mountain Restoration"
+   
+                                ),]
+
+
+NSHCivil$Community<-NA
+NSHCivil$Community<- case_when(NSHCivil$NSHLoc.y!="Philadelphia County Jail"~"Community",
+                                  TRUE~"PDP")
+
+NSHCivil <- NSHCivil %>% group_by(Community) %>% tally()#summarise(Total=n_distinct(ClientID))
+NSHCivil$Type<-"NSH Civil Discharges"
+
+NSHForensic <- NSHForensic %>% group_by(Community) %>% tally()# summarise(Total=n_distinct(ClientID)) 
+NSHForensic$Type<-"NSH Forensic Discharges"
+
+Placements<-rbind(NSHCivil,NSHForensic)
+
+PlotNSHDisTitle<- paste0("NSH Discharges by Location",
+                         "\n01/27/16 to ",format(WLDate,"%m/%d/%y"))
+
+
+PlotNSHDischarges<-ggplot(data=Placements)+
+  geom_bar(aes(x=Type, y=n,fill=Community),stat="identity",position="stack")+
+  coord_flip()+
+  geom_label(aes(x=Type, y=n,label=n,fill=Community),position=position_stack(vjust=0.5),color = "white", show.legend = FALSE)+
+  ggtitle(PlotNSHDisTitle)+
+  ylab("Philadelphians")+xlab("Origin")+
+  theme_minimal() +
+  labs(fill = "DC Location")+
+  theme(plot.title=element_text( hjust=.5, vjust=0.5, face='bold'))
+NSHDCIntro<- paste0("The graph below shows a breakdown of where Philadelphians were placed after discharge from Norristown State Hospital as of ",format(WLDate,"%m/%d/%y"),".")
+```  
+
+## NSH Discharge Summary
+`r NSHDCIntro`
+```{r echo=FALSE, message=FALSE, warning=FALSE,fig.width=10, fig.height=3.5}
+NSHDCFig<-paste0("Figure 4. Breakdown of NSH discharges by location for individuals returning to Philadelphia from 01/27/16 to  ",format(WLDate,"%m/%d/%y"),".")
+PlotNSHDischarges
+#find number of months to enddate 
+totalmonths<-interval(ymd('20160127'),ymd(enddt))
+totalmonths<-totalmonths %/% months(1)
+ComDC<-Placements %>% group_by(Community) %>% summarize(sum(n))
+ComDC<-ComDC[which(ComDC$Community=="Community"),]
+NSHDCBullet<-paste0("Since the 1/27/16 Settlement Agreement, NSH has restored ",ComDC$`sum(n)`," individuals to competency who were then returned to county jail (averaging ",round(ComDC$`sum(n)`/totalmonths,digits = 2)," persons per month). 1 individual from the NSH Step Down Unit returned to county jail due to significant destruction of NSH property, for a total of ",ComDC$`sum(n)`+1," individuals returned to jail from NSH.")
+```
+
+### `r NSHDCFig`
+* `r NSHDCBullet`
+```{=openxml}
+<w:p><w:r><w:br w:type="page"/></w:r></w:p>
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE,fig.width=8, fig.height=3.5}
+##################### Placements by Origin ###############################
+
+NSHtoCommunity<- Placements[which(Placements$Community=="Community"),]
+NSHtoCommunity <- NSHtoCommunity %>% group_by(Community) %>% summarise(n=sum(n))
+NSHtoCommunity$Type<-"NSH to Community"
+NSHtoCommunity<-NSHtoCommunity %>% rename(Loc = Community)
+
+WaitlisttoCommunity = data.frame()
+WaitlisttoCommunity<-WLARemoveTyp[which(WLARemoveTyp$removeHoldTypeName=="Divert to Community"),]
+WaitlisttoCommunity$Type<-"PDP to Community"
+WaitlisttoCommunity<-WaitlisttoCommunity %>% rename(Loc = removeHoldTypeName)
+WaitlisttoCommunity$n<-WaitlisttoCommunity$n+1
+#PDP to Community.
+
+PDPtoCommunity<- ALLDC[which(ALLDC$NSHLoc.x =="Philadelphia County Jail" & 
+                                    is.na(ALLDC$Discharge) == FALSE &
+                                    startsWith(ALLDC$NSHLoc.y,'NSH')==FALSE &
+                                    startsWith(ALLDC$NSHLoc.y,'SCI')==FALSE &
+                                    is.na(ALLDC$NSHLoc.y) == FALSE &
+                                    ALLDC$NSHLoc.y!="DECEASED" &
+                                    ALLDC$NSHLoc.y!="homeless" &
+                                    ALLDC$NSHLoc.y!="Carelink - STAR I"& 
+                                    ALLDC$NSHLoc.y!="Philadelphia County Jail" &
+                                    ALLDC$NSHLoc.y!="Nursing Home" 
+                                 
+                               ),]
+
+PDPtoCommunity <- PDPtoCommunity %>% group_by(NSHLoc.x) %>% tally() #PDPtoCommunity$NSHLoc.x
+PDPtoCommunity$Type<-"PDP to Community"
+PDPtoCommunity<-PDPtoCommunity %>% rename(Loc = NSHLoc.x)
+
+PDPtoCommunity$n<-as.numeric(PDPtoCommunity$n)+as.numeric(WaitlisttoCommunity$n)
+
+AlltoCommunity<-rbind(NSHtoCommunity,PDPtoCommunity)
+
+PlotAlltoComTitle<- paste0("Community Placements by Origin",
+                         "\n01/27/16 to ",format(WLDate,"%m/%d/%y"))
+CommNum<-Placements[which(Placements$Community == "Community"),]
+Commpercent <- sum(CommNum$n)/sum(Placements$n)*100
+
+PieBar<-ggplot(AlltoCommunity,aes(x="",y=n,fill=Type))+
+geom_bar(width=1, stat="identity")+
+  scale_fill_brewer(palette = "YlGnBu")+
+coord_flip()+
+ggtitle(PlotAlltoComTitle)+
+theme(
+        panel.grid=element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        panel.border = element_blank(),
+        plot.subtitle = element_text(hjust=1, vjust=0),
+        #axis.text.x=element_blank(),
+        plot.title=element_text(hjust=.5, vjust=0.5, face='bold')
+        )+
+  geom_text(aes(label =n),position = position_stack(vjust=0.5))+
+  labs(subtitle = paste0("n=",sum(AlltoCommunity$n)))
+ComunPlaceIntro<-paste0("The graph below shows a breakdown of all Philadelphians returned to the community from their hosting location as of ",format(WLDate,"%m/%d/%y"),". Since 1/27/19, ",sum(AlltoCommunity$n)," individuals have been discharged from NSH and PDP to the community.")
+ComunPlaceFig<-paste0("Figure 5. All Philadelphians returned to the community from their hosting location from 01/27/16 to ",format(WLDate,"%m/%d/%y"),".")
+```
+
+# Section 2: Forensic Support Team
+## FST Summary
+Formed in November 2016, the FST has taken on a wide range of efforts to improve the treatment and systemic management of Philadelphia citizens who have been adjudicated Incompetent to Stand Trial (IST) and are in jail waiting to be admitted to NSH. Due to progress on the Forensic Waitlist, low numbers of people waiting, dramatically decreased wait times, and systemic changes, FST has reorganized and joined with the NSH team to flexibly respond to the needs of the population. FST focuses its efforts on conducting docket reviews, advocating for people in mental health court, completing clinical as well as legal reviews, educating people (including lawyers and clinicians) about being on the waitlist and at NSH, and supporting individuals prior to and after re-entry to the community.  
+```{r image_with_text, echo=FALSE, message=FALSE, warning=FALSE, fig.width=7.5, fig.height=4}
+img<-readPNG('FST.png')
+plo<-rbind(
+data.frame(x=1,y=0),
+data.frame(x=1001,y=1001),
+data.frame(x=1001,y=0),
+data.frame(x=1,y=1001)
+)
+docketlookups<- subset.data.frame(WLADates,WLADates$waitListEffDate>='2016-11-01')
+docketlookups <- docketlookups %>% group_by(waitListEffDate) %>% summarise(Total=n_distinct(`ClientID#`))
+docketlookups<-docketlookups%>%tally(Total)
+
+testr<- sum(docketlookups$Total)
+
+docketindiv<-subset.data.frame(WLADates,WLADates$waitListEffDate>='2016-11-01')
+docketindiv<-docketindiv[c(1)]
+docketindiv<-docketindiv %>% distinct() %>% count()
+
+docketlookups <- docketlookups %>% distinct()
+ggplot(data=plo,aes(x=x,y=y))+
+  background_image(img)+
+theme_void()+
+  geom_segment(aes(x=120,y=975,xend=298,yend=975),size=1 )+
+  geom_segment(aes(x=685,y=975,xend=878,yend=975),size=1 )+
+  geom_segment(aes(x=415,y=385,xend=580,yend=385),size=1 )+
+  
+geom_point(size=1,alpha=0)+
+geom_text(mapping=aes(0,565),color="black",size=2.5,alpha = .4,family = "sans",hjust=0, label=paste0("- A total of ",docketindiv+162," individuals have received a docket \n  review since November of 2016.\n- As a result of this review, a total of 143 \n  individuals were then removed from the waitlist."))+
+  
+  ##################################### CHANGE THIS FIGURE MANUALLY ###############
+  geom_text(mapping=aes(560,615),color="black",alpha = .4,size = 2.5,family = "sans",hjust=0, label=paste0("- A total of 338 individuals have received a chart \n  review since December of 2018."))+
+    geom_text(mapping=aes(250,30),color="black",alpha = .4,size=2.5,family = "sans",hjust=0, label=paste0("- A total of ",PDPtoCommunity$n," individuals have been returned to the community from PDP \n through FST intervention."))+
+    
+  geom_text(mapping=aes(120,1000),color="black",family = "sans",fontface="bold",size=3,hjust=0, label=paste0("Court Docket Review"))+
+    geom_text(mapping=aes(685,1000),color="black",family = "sans",size=3,fontface="bold",hjust=0, label=paste0("Legal & Clinical Review"))+
+    geom_text(mapping=aes(415,410),color="black",family = "sans",size=3,fontface="bold",hjust=0, label=paste0("Diversion from NSH"))+
+  
+    geom_text(mapping=aes(0,855),color="black",alpha = .4,size=2.5,family = "sans",hjust=0, label=paste0("Court dockets are reviewed for individuals on the\nwaitlist after each court date to monitor their ongoing\nlegal status. Navigators attend mental health court to\nprovide case consultation services"))+
+   
+   geom_text(mapping=aes(580,790),color="black",alpha = .4,size=2.5,family = "sans",hjust=0, label=paste0("When a person appears on the NSH waitlist, FST\nNavigators are completing a brief review of their\ndemographics as well as their clinical and legal\nrecords to determine if immediate intervention is\nneeded, and if not, what the first intervention\n(clinical or legal) should be. 
+"))+
+
+    geom_text(mapping=aes(280,245),color="black",alpha = .4,size=2.5,family = "sans",hjust=0, label=paste0("In collaboration with NSH and our justice partners, the FST\nNavigators have successfully advocated for individuals to\ndivert from NSH and enter into an ACLU funded community\nplacement when clinically appropriate.
+"))
+  
+```
+
+`r ComunPlaceIntro`
+
+```{r echo=FALSE, message=FALSE, warning=FALSE,fig.width=8, fig.height=2}
+PieBar
+```  
+
+### `r ComunPlaceFig`
+
+```{=openxml}
+<w:p><w:r><w:br w:type="page"/></w:r></w:p>
+```
+
+# Section 3: Community Placements
+## ACLU Funded Placements
+### Table 1. A breakdown of ACLU funded placement types including capacity, current census, individuals stepped down, and individuals identified for admission. 
+```{r  echo=FALSE, message=FALSE, warning=FALSE,fig.width=6, fig.height=5}
+AllStepdowns<-dbGetQuery(con,"
+with Placements
+(
+	ClientID
+	,LOC
+	,Admission
+	,Discharge
+)
+as 
+(
+select c.ClientID#
+	,locn.FldHousingName
+	,loc.fldEntrydateofhousing
+	,loc.[fldDischargeDate/Max-out]
+from tblClient as c
+left join tblHousingEvents as loc on loc.fldClientID#=c.ClientID#
+join tblHousingType as locN on locN.fldHousingLocationID# = loc.fldHousingLocationID#
+
+where loc.fldHousingLocationID# in (449,496,476,502,450,497,451,498,458,499,468,500,471,504,472,503)
+and c.LastName not like '%TEST%'
+and deleted = 0
+and loc.fldEntrydateofhousing > '2016-01-27'
+
+)
+select c.ClientID# as 'ClientID'
+	,c.LastName
+	,c.FirstName
+	,c.SS# as 'SSN'
+	,c.DOB
+	,c.PP# as 'PID'
+	,locN.FldHousingName as 'LOC'
+	,pl.fldEntrydateofhousing as 'Admission'
+	,pl.[fldDischargeDate/Max-out] as 'Discharge'
+
+from tblClient as c
+join Placements as loc on loc.ClientID=c.ClientID#
+join tblHousingEvents as pl on pl.fldClientID#=loc.ClientID
+join tblHousingType as locN on locN.fldHousingLocationID# = pl.fldHousingLocationID#
+
+order by c.ClientID#, pl.fldEntrydateofhousing
+")
+##################### Find individuals who are in a qualifying stepdown
+### Discharges that Count
+Ourplacelist<-AllStepdowns[which(AllStepdowns$Admission>='2016-01-27'&
+                                   is.na(AllStepdowns$Discharge ) == FALSE&
+                             (AllStepdowns$LOC == 'Gaudenzia RTFA (BHJRS)' |
+                             AllStepdowns$LOC == 'Girard Recovery Center' |
+                             AllStepdowns$LOC == 'Girard Recovery Center (Non-ACLU)' |
+                             AllStepdowns$LOC == 'Horizon House - Old York DBT (BHJRS)' |
+                             AllStepdowns$LOC == 'New Vitae - West I' |
+                             AllStepdowns$LOC == 'New Vitae - West II' |
+                             AllStepdowns$LOC == 'New Vitae - South' |
+                             AllStepdowns$LOC == 'VOA - Roosevelt TBI' |
+                             AllStepdowns$LOC == 'VOA - Roosevelt TBI (Non-ACLU)' |
+                             AllStepdowns$LOC == 'VOA - Upsal TBI' |
+                             AllStepdowns$LOC == 'VOA - Upsal TBI (Non-ACLU)' |
+                             AllStepdowns$LOC == 'Horizon House - Old York DBT (Non-ACLU)' |
+                             AllStepdowns$LOC == 'New Vitae - South (Non-ACLU)' |
+                             AllStepdowns$LOC == 'New Vitae - West I (Non-ACLU)' |
+                             AllStepdowns$LOC == 'New Vitae - West II (Non-ACLU)' |
+                             AllStepdowns$LOC == 'Gaudenzia RTFA (Non-ACLU)' |
+                             AllStepdowns$LOC == 'Girard Recovery Center (Non-ACLU)')
+                            ),]
+## Any Placements that Counts
+CurrentPlacements<- AllStepdowns %>% group_by(ClientID) %>% mutate(MDate=max(Admission))
+CurrentPlacements<-CurrentPlacements %>% distinct()
+###Match discharges with any placements that count
+Stepdowns<-merge.data.frame(Ourplacelist,CurrentPlacements, by.x=c("ClientID", "Discharge"), by.y = c("ClientID","Admission"), all.x=TRUE)
+Stepdowns<-Stepdowns %>% distinct()
+Stepdowns<-Stepdowns[which(is.na(Stepdowns$LastName.y)==FALSE &
+                           startsWith(Stepdowns$LOC.y, 'Phila') ==FALSE &
+                                    grepl('Girard',Stepdowns$LOC.y)==FALSE&
+                                    Stepdowns$LOC.y != 'DECEASED'&
+                                    grepl('Belmont',Stepdowns$LOC.y)==FALSE&
+                                    grepl('Hospital',Stepdowns$LOC.y)== FALSE&
+                                    Stepdowns$LOC.y != 'South Mountain Restoration'&
+                                    Stepdowns$LOC.y != 'AWOL'&
+                                    Stepdowns$LOC.y!= 'Nursing Home'&
+                                    Stepdowns$Discharge <= enddt),]
+
+Stepdowns<-Stepdowns[which(Stepdowns$LOC.x== 'Gaudenzia RTFA (BHJRS)' |
+                                         Stepdowns$LOC.x== 'Horizon House - Old York DBT (BHJRS)' |
+                                         Stepdowns$LOC.x== 'New Vitae - West I' |
+                                         Stepdowns$LOC.x== 'New Vitae - West II' |
+                                         Stepdowns$LOC.x== 'New Vitae - South' |
+                                         Stepdowns$LOC.x== 'VOA - Roosevelt TBI' |
+                                         Stepdowns$LOC.x== 'VOA - Roosevelt TBI (Non-ACLU)' |
+                                         Stepdowns$LOC.x== 'VOA - Upsal TBI' |
+                                         Stepdowns$LOC.x== 'VOA - Upsal TBI (Non-ACLU)' |
+                                         Stepdowns$LOC.x== 'Horizon House - Old York DBT (Non-ACLU)' |
+                                         Stepdowns$LOC.x== 'New Vitae - South (Non-ACLU)' |
+                                         Stepdowns$LOC.x== 'New Vitae - West I (Non-ACLU)' |
+                                         Stepdowns$LOC.x== 'New Vitae - West II (Non-ACLU)' |
+                                         Stepdowns$LOC.x== 'Gaudenzia RTFA (Non-ACLU)') &
+                                                (Stepdowns$LOC.y!= 'Gaudenzia RTFA (BHJRS)' &
+                                                 Stepdowns$LOC.y!= 'Horizon House - Old York DBT (BHJRS)' &
+                                                 Stepdowns$LOC.y!= 'New Vitae - West I' &
+                                                 Stepdowns$LOC.y!= 'New Vitae - West II' &
+                                                 Stepdowns$LOC.y!= 'New Vitae - South' &
+                                                 Stepdowns$LOC.y!= 'VOA - Roosevelt TBI' &
+                                                 Stepdowns$LOC.y!= 'VOA - Roosevelt TBI (Non-ACLU)' &
+                                                 Stepdowns$LOC.y!= 'VOA - Upsal TBI' &
+                                                 Stepdowns$LOC.y!= 'VOA - Upsal TBI (Non-ACLU)' &
+                                                 Stepdowns$LOC.y!= 'Horizon House - Old York DBT (Non-ACLU)' &
+                                                 Stepdowns$LOC.y!= 'New Vitae - South (Non-ACLU)' &
+                                                 Stepdowns$LOC.y!= 'New Vitae - West I (Non-ACLU)' &
+                                                 Stepdowns$LOC.y!= 'New Vitae - West II (Non-ACLU)' &
+                                                 Stepdowns$LOC.y!= 'Gaudenzia RTFA (Non-ACLU)' ),]
+
+Stepdownsummary<-Stepdowns %>% distinct()
+Stepdownsummary<- Stepdownsummary %>% group_by(LOC.x) %>% tally()
+StepdownLocations<-c('Girard Recovery Center', 'Horizon House - Old York DBT', 'Gaudenzia RTFA', 'New Vitae - South', 'New Vitae - West I', 'New Vitae - West II', 'VOA - Roosevelt TBI', 'VOA - Upsal TBI')
+TotalBeds<-c(24,6,14,14,12,12,3,3)
+
+Stepdowns<-c(Stepdownsummary %>% filter(grepl('Girard',Stepdownsummary$LOC.x)==TRUE) %>% summarise(sum(n)),
+                  Stepdownsummary %>% filter(grepl('Horizon House',Stepdownsummary$LOC.x)==TRUE) %>% summarise(sum(n)),
+                  Stepdownsummary %>% filter(grepl('Gaud',Stepdownsummary$LOC.x)==TRUE) %>% summarise(sum(n)),
+                  Stepdownsummary %>% filter(grepl('New Vitae - Sou',Stepdownsummary$LOC.x)==TRUE) %>% summarise(sum(n)),
+                  Stepdownsummary %>% filter(grepl('New Vitae - \\bWest I\\b',Stepdownsummary$LOC.x)==TRUE) %>% summarise(sum(n)),
+                  Stepdownsummary %>% filter(grepl('New Vitae - West I{2}',Stepdownsummary$LOC.x)==TRUE) %>% summarise(sum(n)),
+                  Stepdownsummary %>% filter(grepl('VOA - Roos',Stepdownsummary$LOC.x)==TRUE) %>% summarise(sum(n)),
+                  Stepdownsummary %>% filter(grepl('VOA - Ups',Stepdownsummary$LOC.x)==TRUE) %>% summarise(sum(n))
+                  )
+Stepdowns<-unlist(Stepdowns)
+  
+Census <-AllStepdowns[which(is.na(AllStepdowns$Discharge) == TRUE &
+                              AllStepdowns$Admission>='2016-01-27'&
+                             (AllStepdowns$LOC == 'Gaudenzia RTFA (BHJRS)' |
+                             AllStepdowns$LOC == 'Girard Recovery Center' |
+                             AllStepdowns$LOC == 'Girard Recovery Center (Non-ACLU)' |
+                             AllStepdowns$LOC == 'Horizon House - Old York DBT (BHJRS)' |
+                             AllStepdowns$LOC == 'New Vitae - West I' |
+                             AllStepdowns$LOC == 'New Vitae - West II' |
+                             AllStepdowns$LOC == 'New Vitae - South' |
+                             AllStepdowns$LOC == 'VOA - Roosevelt TBI' |
+                             AllStepdowns$LOC == 'VOA - Roosevelt TBI (Non-ACLU)' |
+                             AllStepdowns$LOC == 'VOA - Upsal TBI' |
+                             AllStepdowns$LOC == 'VOA - Upsal TBI (Non-ACLU)' |
+                             AllStepdowns$LOC == 'Horizon House - Old York DBT (Non-ACLU)' |
+                             AllStepdowns$LOC == 'New Vitae - South (Non-ACLU)' |
+                             AllStepdowns$LOC == 'New Vitae - West I (Non-ACLU)' |
+                             AllStepdowns$LOC == 'New Vitae - West II (Non-ACLU)' |
+                             AllStepdowns$LOC == 'Gaudenzia RTFA (Non-ACLU)' |
+                             AllStepdowns$LOC == 'Girard Recovery Center (Non-ACLU)')
+                        ),]
+Census<- Census %>% distinct()
+Census<- Census %>% group_by(LOC) %>% tally()
+
+
+Census<-c(Census %>% filter(grepl('Girard',Census$LOC)==TRUE) %>% summarise(sum(n)),
+                  Census %>% filter(grepl('Horizon House',Census$LOC)==TRUE) %>% summarise(sum(n)),
+                  Census %>% filter(grepl('Gaud',Census$LOC)==TRUE) %>% summarise(sum(n)),
+                  Census %>% filter(grepl('New Vitae - South',Census$LOC)==TRUE) %>% summarise(sum(n)),
+                  Census %>% filter(grepl('New Vitae - \\bWest I\\b',Census$LOC)==TRUE) %>% summarise(sum(n)),
+                  Census %>% filter(grepl('New Vitae - West I{2}',Census$LOC)==TRUE) %>% summarise(sum(n)),
+                  Census %>% filter(grepl('VOA - Roosevelt',Census$LOC)==TRUE) %>% summarise(sum(n)),
+                  Census %>% filter(grepl('VOA - Ups',Census$LOC)==TRUE) %>% summarise(sum(n))
+                  )
+
+Census<-unlist(Census)
+Placement<-c("EAC","RTFA","RTFA","RTFA","RTFA","RTFA","RTFA","RTFA")
+Stepdownsummary<-data.frame(Placement,StepdownLocations,TotalBeds,Census,Stepdowns)
+Stepdownsummary$`Individuals Identified*`<-0
+colnames(Stepdownsummary)<-c('LOC','Placement','Total Beds', 'Beds Filled', 'Individuals Stepped Down','Individuals Identified*')
+
+CRRTable = data.frame(matrix(nrow=7, ncol=6))
+colnames(CRRTable)<-colnames(Stepdownsummary)
+CRRTable$Placement<-c("HH - Farmhouse","Merakey - Fisher's Lane","RHD - Heart","RHD - Kailo","Carelink - STAR","Carelink - STAR Stepdown","SouthWest Recovery House")
+CRRTable$`Total Beds`<-c(3,4,4,4,4,4,6)
+CRRTable$LOC<-c("CRR","CRR","CRR","CRR","CRR","CRR","Recovery House")
+CRRTable$`Individuals Identified*`<-0
+CRRTable$`Beds Filled`<-0
+CRRTable$`Individuals Stepped Down`<-0
+
+PlacementTable<-rbind(Stepdownsummary,CRRTable)
+PlacementTable<-flextable(PlacementTable) 
+PlacementTable<-theme_box(PlacementTable)
+PlacementTable<-flextable::font(PlacementTable, fontname = "calibri")
+PlacementTable<-bg(PlacementTable, bg='gainsboro',part='header')
+PlacementTable<- merge_v(PlacementTable,'LOC','LOC')
+#PlacementTable<-align(PlacementTable,part='header',3:6,1:1)
+PlacementTable<-merge_at(PlacementTable,3:6,6:6)
+PlacementTable<-merge_at(PlacementTable,7:8,6:6)
+PlacementTable<-merge_at(PlacementTable,13:14,6:6)
+PlacementTable <- align( PlacementTable, part='all',align = "center",,3:6)
+PlacementTable<-bg(PlacementTable, bg='lightsteelblue1',1:1,)
+PlacementTable<-bg(PlacementTable, bg='burlywood1',2:2,)
+PlacementTable<-bg(PlacementTable, bg='burlywood2',3:6,)
+PlacementTable<-bg(PlacementTable, bg='burlywood',7:8,)
+PlacementTable<-bg(PlacementTable, bg='lightpink1',9:12,)
+PlacementTable<-bg(PlacementTable, bg='lightpink2',13:14,)
+PlacementTable<-bg(PlacementTable, bg='khaki1',15:15,)
+PlacementTable<-fontsize(PlacementTable,part='all',size=9)
+PlacementTable<-autofit(PlacementTable)
+PlacementTable<-padding(PlacementTable,padding =.5,part='all')
+
+
+```
+
+`r PlacementTable`
+
+### *Clinically assessed and identified as appropriate for this placement at this level of care.
+
+#### ACLU Funded Placement Summary
+***
+DBHIDS established the programs listed above for Philadelphians committed to NSH or on the Forensic Waitlist at PDP. In March 2020, all these programs took immediate action to respond to the COVID-19 pandemic. Program responses included educating residents about COVID-19, temporarily suspending all community outings, having each resident's support system communicate by phone and not visit in person, establishing plans to quarantine residents who were exposed to COVID-19, setting aside beds to
+quarantine people, having non-direct care staff work from home, having staff isolate themselves at home if exposed to the virus, and providing appropriate personal protective equipment. In addition, some of the providers listed above had to pause admissions because a resident or staff person tested positive for COVID-19.
+
+DBHIDS provided guidance and support to the providers during this difficult time. For example, DBHIDS worked with providers to support residents who did not follow quarantine rules. In addition, DBHIDS continued to engage Philadelphians at NSH and on the Forensic Waitlist at PDP to identify those appropriate for these levels of care and prepare them for a successful transition back to the community. To enhance DBHIDS's capability to engage Philadelphians at NSH given the restrictions imposed by
+COVID-19, DBHIDS and NSH drafted a protocol for DBHIDS to conduct telehealth assessments with Philadelphians at NSH. Implementation of this protocol was delayed due to technological barriers. Discharges from NSH were faciliated by the fact that NSH had tested all Philadelphians for COVID-19 and were retesting Philadelphians who had been approved for discharge.
+
