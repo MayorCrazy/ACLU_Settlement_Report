@@ -101,22 +101,16 @@ order by referralDate, c.LastName
 
 ")
 
-##################### Current WL ######################
-ACLUAll[,11]<- as.Date(ACLUAll[,11])
-ACLUAll[,12]<- as.Date.factor(ACLUAll[,12])
-ACLUAll[,13]<- as.Date.factor(ACLUAll[,13])
-ACLUAll[,14]<- as.Date.factor(ACLUAll[,14])
-ACLUAll[,16]<- as.Date.factor(ACLUAll[,16])
+ACLUAll[c('commitmentDate','requestedDate','referralDate','waitListEffDate','remHoldDate')] <- lapply(ACLUAll[c('commitmentDate','requestedDate','referralDate','waitListEffDate','remHoldDate')], as.Date, origin="1899-12-30")
 
 
+##################### Identify the Current Waitlsit ######################
 ACLUAll <- ACLUAll[which(ACLUAll$waitListEffDate <=enddt),]
 WLDate <- max(ACLUAll$waitListEffDate)
-
 CurrentWL <-ACLUAll[which(ACLUAll$waitListEffDate == WLDate),]
 
-
-AllWLDates <- ACLUAll %>% group_by(waitListEffDate) %>% summarise(n=n_distinct(`ClientID#`))
-AllWLDates <- subset.data.frame(AllWLDates, select=-2)
+##################### Seperate all WL Dates ##############################
+AllWLDates <- ACLUAll %>% group_by(waitListEffDate) %>% summarise()
 AllWLDates$Qtr <-0
 AllWLDates$Qtr<- quarter(AllWLDates$waitListEffDate)
 AllWLDates$Year<- year(AllWLDates$waitListEffDate)
@@ -144,11 +138,11 @@ Facilities Admissions. ","As of ",format(as.Date(WLDate), '%m/%d/%y'), " Philade
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE,fig.width=10, fig.height=4.6}
 
-#Removed current WL
+#Find Removed current WL
 WLCRem<-count(CurrentWL[which(is.na(CurrentWL$removeHoldTypeName) !=TRUE),])
 WLCRemoveTyp<-CurrentWL %>% group_by(removeHoldTypeName) %>% summarise(n= n_distinct(`ClientID#`))
 
-#Removed by Type All Time
+#Find Removed by Type All Time
 WLARemoveTyp<-ACLUAll %>% group_by(removeHoldTypeName) %>% tally()#summarise(n= n_distinct(`ClientID#`))
 
 ############# Average WL Census for each Quarter with Plot ##############
