@@ -327,7 +327,7 @@ PlotNSHMovement<-ggplot()+
   geom_text(aes(x='2018 Q3',y=96),label="State added beds\nduring these periods",size=3)
 
 
-NSHMoveIntro<-paste0("As of ",format(as.Date(WLDate), '%m/%d/%y')," ",sum(NSHDC$n)," Philadelphians have been discharged from NSH while ",sum(NSHAdmitts$n)," were admitted to NSH from the waitlist at PDP with 3 additional Philadelphians admitted from other sources.","On 3/12/20, Governor Wolf placed a hold on all NSH Admissions and discharges due to COVID-19. On 4/14/20, community discharges resumed for individuals to a home or residential progam.")
+NSHMoveIntro<-paste0("As of ",format(as.Date(WLDate), '%m/%d/%y'),", ",sum(NSHDC$n)," Philadelphians have been discharged from NSH while ",sum(NSHAdmitts$n)," were admitted to NSH from the waitlist at PDP with 3 additional Philadelphians admitted from other sources.","On 3/12/20, Governor Wolf placed a hold on all NSH Admissions and discharges due to COVID-19. On 4/14/20, community discharges resumed for individuals to a home or residential progam.")
 
 ```
 ## Philadelphians Admitted to and Discharged from NSH
@@ -482,7 +482,7 @@ theme(
         )+
   geom_text(aes(label =n),position = position_stack(vjust=0.5))+
   labs(subtitle = paste0("n=",sum(AlltoCommunity$n)))
-ComunPlaceIntro<-paste0("The graph below shows a breakdown of all Philadelphians returned to the community from their hosting location as of ",format(WLDate,"%m/%d/%y"),". Since 1/27/19, ",sum(AlltoCommunity$n)," individuals have been discharged from NSH and PDP to the community.")
+ComunPlaceIntro<-paste0("The graph below shows a breakdown of all Philadelphians returned to the community from their hosting location as of ",format(WLDate,"%m/%d/%y"),". Since 1/27/16, ",sum(AlltoCommunity$n)," individuals have been discharged from NSH and PDP to the community.")
 ComunPlaceFig<-paste0("Figure 5. All Philadelphians returned to the community from their hosting location from 01/27/16 to ",format(WLDate,"%m/%d/%y"),".")
 ```
 
@@ -760,6 +760,5 @@ PlacementTable<-padding(PlacementTable,padding =.5,part='all')
 DBHIDS established the programs listed above for Philadelphians committed to NSH or on the Forensic Waitlist at PDP. In March 2020, all these programs took immediate action to respond to the COVID-19 pandemic. Program responses included educating residents about COVID-19, temporarily suspending all community outings, having each resident's support system communicate by phone and not visit in person, establishing plans to quarantine residents who were exposed to COVID-19, setting aside beds to
 quarantine people, having non-direct care staff work from home, having staff isolate themselves at home if exposed to the virus, and providing appropriate personal protective equipment. In addition, some of the providers listed above had to pause admissions because a resident or staff person tested positive for COVID-19.
 
-DBHIDS provided guidance and support to the providers during this difficult time. For example, DBHIDS worked with providers to support residents who did not follow quarantine rules. In addition, DBHIDS continued to engage Philadelphians at NSH and on the Forensic Waitlist at PDP to identify those appropriate for these levels of care and prepare them for a successful transition back to the community. To enhance DBHIDS's capability to engage Philadelphians at NSH given the restrictions imposed by
-COVID-19, DBHIDS and NSH drafted a protocol for DBHIDS to conduct telehealth assessments with Philadelphians at NSH. Implementation of this protocol was delayed due to technological barriers. Discharges from NSH were faciliated by the fact that NSH had tested all Philadelphians for COVID-19 and were retesting Philadelphians who had been approved for discharge.
+DBHIDS provided guidance and support to the providers during this difficult time. For example, DBHIDS worked with providers to support residents who did not follow quarantine rules. In addition, DBHIDS continued to engage Philadelphians at NSH and on the Forensic Waitlist at PDP to identify those appropriate for these levels of care and prepare them for a successful transition back to the community. To enhance DBHIDS’s capability to engage Philadelphians at NSH given the restrictions imposed by COVID-19, DBHIDS and NSH drafted a protocol for DBHIDS to conduct telehealth assessments with Philadelphians at NSH, and assessments have resumed in a virtual format to guide discharge planningDischarges from NSH were facilitated by the fact that NSH tests all individuals for COVID-19 prior to discharge.
 
