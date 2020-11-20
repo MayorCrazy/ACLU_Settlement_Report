@@ -1,11 +1,11 @@
 ---
-title:  "`r knitr::include_graphics('DBHIDS-logos.png')`  \n &nbsp;  \n &nbsp;  \nDBHIDS Support for the Commonwealths Response to ACLU Litigation"
+title:  "`r knitr::include_graphics('PNGs/DBHIDS-logos.png')`  \n &nbsp;  \n &nbsp;  \nDBHIDS Support for the Commonwealths Response to ACLU Litigation"
 author: MONTHLY SNAPSHOT OF 
 date: "`r enddt<-'2020-09-30'
         format(as.Date(enddt), '%B %Y')`" 
 output: 
      word_document:
-       reference_docx: MonthlyForensicStyle.docx
+       reference_docx: Template/MonthlyForensicStyle.docx
        toc: yes
        toc_depth: 2
 
@@ -101,22 +101,16 @@ order by referralDate, c.LastName
 
 ")
 
-##################### Current WL ######################
-ACLUAll[,11]<- as.Date(ACLUAll[,11])
-ACLUAll[,12]<- as.Date.factor(ACLUAll[,12])
-ACLUAll[,13]<- as.Date.factor(ACLUAll[,13])
-ACLUAll[,14]<- as.Date.factor(ACLUAll[,14])
-ACLUAll[,16]<- as.Date.factor(ACLUAll[,16])
+ACLUAll[c('commitmentDate','requestedDate','referralDate','waitListEffDate','remHoldDate')] <- lapply(ACLUAll[c('commitmentDate','requestedDate','referralDate','waitListEffDate','remHoldDate')], as.Date, origin="1899-12-30")
 
 
+##################### Identify the Current Waitlsit ######################
 ACLUAll <- ACLUAll[which(ACLUAll$waitListEffDate <=enddt),]
 WLDate <- max(ACLUAll$waitListEffDate)
-
 CurrentWL <-ACLUAll[which(ACLUAll$waitListEffDate == WLDate),]
 
-
-AllWLDates <- ACLUAll %>% group_by(waitListEffDate) %>% summarise(n=n_distinct(`ClientID#`))
-AllWLDates <- subset.data.frame(AllWLDates, select=-2)
+##################### Seperate all WL Dates ##############################
+AllWLDates <- ACLUAll %>% group_by(waitListEffDate) %>% summarise()
 AllWLDates$Qtr <-0
 AllWLDates$Qtr<- quarter(AllWLDates$waitListEffDate)
 AllWLDates$Year<- year(AllWLDates$waitListEffDate)
@@ -144,11 +138,11 @@ Facilities Admissions. ","As of ",format(as.Date(WLDate), '%m/%d/%y'), " Philade
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE,fig.width=10, fig.height=4.6}
 
-#Removed current WL
+#Find Removed current WL
 WLCRem<-count(CurrentWL[which(is.na(CurrentWL$removeHoldTypeName) !=TRUE),])
 WLCRemoveTyp<-CurrentWL %>% group_by(removeHoldTypeName) %>% summarise(n= n_distinct(`ClientID#`))
 
-#Removed by Type All Time
+#Find Removed by Type All Time
 WLARemoveTyp<-ACLUAll %>% group_by(removeHoldTypeName) %>% tally()#summarise(n= n_distinct(`ClientID#`))
 
 ############# Average WL Census for each Quarter with Plot ##############
@@ -496,7 +490,7 @@ ComunPlaceFig<-paste0("Figure 5. All Philadelphians returned to the community fr
 ## FST Summary
 Formed in November 2016, the FST has taken on a wide range of efforts to improve the treatment and systemic management of Philadelphia citizens who have been adjudicated Incompetent to Stand Trial (IST) and are in jail waiting to be admitted to NSH. Due to progress on the Forensic Waitlist, low numbers of people waiting, dramatically decreased wait times, and systemic changes, FST has reorganized and joined with the NSH team to flexibly respond to the needs of the population. FST focuses its efforts on conducting docket reviews, advocating for people in mental health court, completing clinical as well as legal reviews, educating people (including lawyers and clinicians) about being on the waitlist and at NSH, and supporting individuals prior to and after re-entry to the community.  
 ```{r image_with_text, echo=FALSE, message=FALSE, warning=FALSE, fig.width=7.5, fig.height=4}
-img<-readPNG('FST.png')
+img<-readPNG('PNGs/FST.png')
 plo<-rbind(
 data.frame(x=1,y=0),
 data.frame(x=1001,y=1001),
@@ -534,7 +528,7 @@ geom_text(mapping=aes(0,565),color="black",size=2.5,alpha = .4,family = "sans",h
   
     geom_text(mapping=aes(0,855),color="black",alpha = .4,size=2.5,family = "sans",hjust=0, label=paste0("Court dockets are reviewed for individuals on the\nwaitlist after each court date to monitor their ongoing\nlegal status. Navigators attend mental health court to\nprovide case consultation services"))+
    
-   geom_text(mapping=aes(580,790),color="black",alpha = .4,size=2.5,family = "sans",hjust=0, label=paste0("When a person appears on the NSH waitlist, FST\nNavigators are completing a brief review of their\ndemographics as well as their clinical and legal\nrecords to determine if immediate intervention is\nneeded, and if not, what the first intervention\n(clinical or legal) should be. 
+   geom_text(mapping=aes(580,790),color="black",alpha = .4,size=2.5,family = "sans",hjust=0, label=paste0("When a person appears on the NSH waitlist, FST\nNavigators are completing a brief review of their\ndemographics as well as their clinical and legal\nrecords to determine if immediate intervention is\nneeded, and if not, what the first intervention\n(clinical or legal) should be. All reviews are shared with NSH. 
 "))+
 
     geom_text(mapping=aes(280,245),color="black",alpha = .4,size=2.5,family = "sans",hjust=0, label=paste0("In collaboration with NSH and our justice partners, the FST\nNavigators have successfully advocated for individuals to\ndivert from NSH and enter into an ACLU funded community\nplacement when clinically appropriate.
