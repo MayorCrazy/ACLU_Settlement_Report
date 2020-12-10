@@ -146,11 +146,8 @@ WLARemoveTyp<-ACLUAll %>% group_by(removeHoldTypeName) %>% tally()#summarise(n= 
 
 ############# Average WL Census for each Quarter with Plot ##############
 
-WLADates<- ACLUAll[which((ACLUAll$genderName=="Male" &
-                                              is.na(ACLUAll$removeHoldTypeName)==TRUE) |
-                                             (ACLUAll$genderName=="Female" &
-                                                is.na(ACLUAll$removeHoldTypeName))==TRUE)
-                   ,]
+WLADates<- ACLUAll[which(is.na(ACLUAll$removeHoldTypeName)==TRUE),]
+
 WLAAverage = data.frame()                              
 WLAAverage <- WLADates %>% group_by(waitListEffDate) %>% summarise(Total=n_distinct(`ClientID#`))
 WLAAverage <- merge.data.frame(AllWLDates,WLAAverage, all.x = TRUE)
