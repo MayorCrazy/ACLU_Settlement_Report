@@ -1,7 +1,7 @@
 ---
 title:  "`r knitr::include_graphics('PNGs/DBHIDS-logos.png')`  \n &nbsp;  \n &nbsp;  \nDBHIDS Support for the Commonwealths Response to ACLU Litigation"
 author: MONTHLY SNAPSHOT OF 
-date: "`r enddt<-'2020-09-30'
+date: "`r enddt<-'2020-11-30'
         format(as.Date(enddt), '%B %Y')`" 
 output: 
      word_document:
@@ -37,7 +37,7 @@ library(ggpmisc)
 ```
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
-enddt<-'2020-09-30'
+enddt<-'2020-11-30'
 ################### Connection to CCS ############################
 con <- dbConnect(odbc(), Driver = "SQL Server", Server = "SQL-HQ", 
                  Database = "SCCJU", Trusted_Connection = "True")
@@ -129,8 +129,7 @@ WLCTot<-count(CurrentWL[which((CurrentWL$genderName=="Male" &
                                 (CurrentWL$genderName=="Female" &
                                    is.na(CurrentWL$removeHoldTypeName))==TRUE)
                         ,])
-WaitListIntro<- paste0("Effective 3/13/20, Governor Wolf placed a hold on all NSH admissions and discharges due to the spread of COVID-19. On May 19, 2020, NSH distributed an email which provided its plan to to resume admissions during the week of June 1, 2020. The plan included the COVID 19 DHS Protocol for State
-Facilities Admissions. ","As of ",format(as.Date(WLDate), '%m/%d/%y'), " Philadelphia's Forensic Waitlist for NSH stands at ",WLCTot,". The waitlist is composed of ",WLCFem," Females and ",WLCMal," Males.")
+WaitListIntro<- paste0("Effective 3/13/20, Governor Wolf placed a hold on all NSH admissions and discharges due to the spread of COVID-19. On May 19, 2020, NSH distributed an email which provided its plan to to resume admissions during the week of June 1, 2020. The plan included the COVID 19 DHS Protocol for State Facilities Admissions. ","As of ",format(as.Date(WLDate), '%m/%d/%y'), " Philadelphia's Forensic Waitlist for NSH stands at ",WLCTot,". The waitlist is composed of ",WLCFem," Females and ",WLCMal," Males. On 10/27/2020, OMHSAS issued a letter from NSH CEO stating that admissions were temporarily suspended due to multiple patients testing positive for COVID-19.")
 ```
 # Section 1: NSH Movement 
 ## Philadelphia Waitlist
@@ -147,11 +146,8 @@ WLARemoveTyp<-ACLUAll %>% group_by(removeHoldTypeName) %>% tally()#summarise(n= 
 
 ############# Average WL Census for each Quarter with Plot ##############
 
-WLADates<- ACLUAll[which((ACLUAll$genderName=="Male" &
-                                              is.na(ACLUAll$removeHoldTypeName)==TRUE) |
-                                             (ACLUAll$genderName=="Female" &
-                                                is.na(ACLUAll$removeHoldTypeName))==TRUE)
-                   ,]
+WLADates<- ACLUAll[which(is.na(ACLUAll$removeHoldTypeName)==TRUE),]
+
 WLAAverage = data.frame()                              
 WLAAverage <- WLADates %>% group_by(waitListEffDate) %>% summarise(Total=n_distinct(`ClientID#`))
 WLAAverage <- merge.data.frame(AllWLDates,WLAAverage, all.x = TRUE)
@@ -327,7 +323,7 @@ PlotNSHMovement<-ggplot()+
   geom_text(aes(x='2018 Q3',y=96),label="State added beds\nduring these periods",size=3)
 
 
-NSHMoveIntro<-paste0("As of ",format(as.Date(WLDate), '%m/%d/%y')," ",sum(NSHDC$n)," Philadelphians have been discharged from NSH while ",sum(NSHAdmitts$n)," were admitted to NSH from the waitlist at PDP with 3 additional Philadelphians admitted from other sources.","On 3/12/20, Governor Wolf placed a hold on all NSH Admissions and discharges due to COVID-19. On 4/14/20, community discharges resumed for individuals to a home or residential progam.")
+NSHMoveIntro<-paste0("As of ",format(as.Date(WLDate), '%m/%d/%y'),", ",sum(NSHDC$n)," Philadelphians have been discharged from NSH while ",sum(NSHAdmitts$n)," were admitted to NSH from the waitlist at PDP with 3 additional Philadelphians admitted from other sources.","On 3/12/20, Governor Wolf placed a hold on all NSH Admissions and discharges due to COVID-19. On 4/14/20, community discharges resumed for individuals to a home or residential progam. On 10/27/20, NSH again suspended admissions due to COVID-19.")
 
 ```
 ## Philadelphians Admitted to and Discharged from NSH
@@ -482,7 +478,7 @@ theme(
         )+
   geom_text(aes(label =n),position = position_stack(vjust=0.5))+
   labs(subtitle = paste0("n=",sum(AlltoCommunity$n)))
-ComunPlaceIntro<-paste0("The graph below shows a breakdown of all Philadelphians returned to the community from their hosting location as of ",format(WLDate,"%m/%d/%y"),". Since 1/27/19, ",sum(AlltoCommunity$n)," individuals have been discharged from NSH and PDP to the community.")
+ComunPlaceIntro<-paste0("The graph below shows a breakdown of all Philadelphians returned to the community from their hosting location as of ",format(WLDate,"%m/%d/%y"),". Since 1/27/16, ",sum(AlltoCommunity$n)," individuals have been discharged from NSH and PDP to the community.")
 ComunPlaceFig<-paste0("Figure 5. All Philadelphians returned to the community from their hosting location from 01/27/16 to ",format(WLDate,"%m/%d/%y"),".")
 ```
 
@@ -519,7 +515,7 @@ geom_point(size=1,alpha=0)+
 geom_text(mapping=aes(0,565),color="black",size=2.5,alpha = .4,family = "sans",hjust=0, label=paste0("- A total of ",docketindiv+162," individuals have received a docket \n  review since November of 2016.\n- As a result of this review, a total of 143 \n  individuals were then removed from the waitlist."))+
   
   ##################################### CHANGE THIS FIGURE MANUALLY ###############
-  geom_text(mapping=aes(560,615),color="black",alpha = .4,size = 2.5,family = "sans",hjust=0, label=paste0("- A total of 338 individuals have received a chart \n  review since December of 2018."))+
+  geom_text(mapping=aes(560,615),color="black",alpha = .4,size = 2.5,family = "sans",hjust=0, label=paste0("- A total of 348 individuals have received a chart \n  review since December of 2018."))+
     geom_text(mapping=aes(250,30),color="black",alpha = .4,size=2.5,family = "sans",hjust=0, label=paste0("- A total of ",PDPtoCommunity$n," individuals have been returned to the community from PDP \n through FST intervention."))+
     
   geom_text(mapping=aes(120,1000),color="black",family = "sans",fontface="bold",size=3,hjust=0, label=paste0("Court Docket Review"))+
@@ -664,7 +660,7 @@ Stepdowns<-Stepdowns[which(Stepdowns$LOC.x== 'Gaudenzia RTFA (BHJRS)' |
 Stepdownsummary<-Stepdowns %>% distinct()
 Stepdownsummary<- Stepdownsummary %>% group_by(LOC.x) %>% tally()
 StepdownLocations<-c('Girard Recovery Center', 'Horizon House - Old York DBT', 'Gaudenzia RTFA', 'New Vitae - South', 'New Vitae - West I', 'New Vitae - West II', 'VOA - Roosevelt TBI', 'VOA - Upsal TBI')
-TotalBeds<-c(24,6,14,14,12,12,3,3)
+TotalBeds<-c(26,6,14,14,12,12,3,3)
 
 Stepdowns<-c(Stepdownsummary %>% filter(grepl('Girard',Stepdownsummary$LOC.x)==TRUE) %>% summarise(sum(n)),
                   Stepdownsummary %>% filter(grepl('Horizon House',Stepdownsummary$LOC.x)==TRUE) %>% summarise(sum(n)),
@@ -757,9 +753,8 @@ PlacementTable<-padding(PlacementTable,padding =.5,part='all')
 
 #### ACLU Funded Placement Summary
 ***
-DBHIDS established the programs listed above for Philadelphians committed to NSH or on the Forensic Waitlist at PDP. In March 2020, all these programs took immediate action to respond to the COVID-19 pandemic. Program responses included educating residents about COVID-19, temporarily suspending all community outings, having each resident's support system communicate by phone and not visit in person, establishing plans to quarantine residents who were exposed to COVID-19, setting aside beds to
-quarantine people, having non-direct care staff work from home, having staff isolate themselves at home if exposed to the virus, and providing appropriate personal protective equipment. In addition, some of the providers listed above had to pause admissions because a resident or staff person tested positive for COVID-19.
+DBHIDS established the programs listed above for Philadelphians committed to NSH, on the Forensic Waitlist at PDP, or at risk of commitment to NSH. In March 2020, all these programs took immediate action to respond to the COVID-19 pandemic. Program responses included educating residents about COVID-19, temporarily suspending all community outings, having each resident’s support system communicate by phone and not visit in person, establishing plans to quarantine residents who were exposed to COVID-19, setting aside beds to quarantine people, having non-direct care staff work from home, having staff isolate themselves at home if exposed to the virus, and providing appropriate personal protective equipment. In addition, some of the providers listed above had to pause admissions because a resident or staff person tested positive for COVID-19.
 
-DBHIDS provided guidance and support to the providers during this difficult time. For example, DBHIDS worked with providers to support residents who did not follow quarantine rules. In addition, DBHIDS continued to engage Philadelphians at NSH and on the Forensic Waitlist at PDP to identify those appropriate for these levels of care and prepare them for a successful transition back to the community. To enhance DBHIDS's capability to engage Philadelphians at NSH given the restrictions imposed by
-COVID-19, DBHIDS and NSH drafted a protocol for DBHIDS to conduct telehealth assessments with Philadelphians at NSH. Implementation of this protocol was delayed due to technological barriers. Discharges from NSH were faciliated by the fact that NSH had tested all Philadelphians for COVID-19 and were retesting Philadelphians who had been approved for discharge.
+DBHIDS provided guidance and support to the providers during this difficult time. For example, DBHIDS worked with providers to support residents who did not follow quarantine rules. In addition, DBHIDS continued to engage Philadelphians at NSH and on the Forensic Waitlist at PDP to identify those appropriate for these levels of care and prepare them for a successful transition back to the community. To enhance DBHIDS’s capability to engage Philadelphians at NSH given the restrictions imposed by COVID-19, DBHIDS and NSH drafted a protocol for DBHIDS to conduct telehealth assessments with Philadelphians at NSH, and assessments have resumed in a virtual format to guide discharge planning. Discharges from NSH are facilitated by the fact that NSH tests all individuals for COVID-19 prior to discharge
+
 
