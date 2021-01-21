@@ -11,12 +11,14 @@ output:
 
 ---
 ```{r echo=FALSE, message=FALSE, warning=FALSE,fig.width=2, fig.height=1.5}
-
+library(BHJRSBIT)
+library(dplyr)
+library(zoo)
+library(ggplot2)
+library(ggpubr)
 library(odbc)
 library(reshape2)
-library(dplyr)
 library(openxlsx)
-library(ggplot2)
 library(lubridate)
 library(tidyr)
 library(gridExtra)
@@ -24,7 +26,6 @@ library(flextable)
 library(png)
 library(knitr)
 library(grid)
-library(ggpubr)
 library(gdtools)
 library(webshot)
 library(magick)
@@ -38,6 +39,66 @@ library(ggpmisc)
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 enddt<-'2020-11-30'
+
+################### Alien Code ###################################
+df <- fetch_query("SELECT [ClientID]
+      ,[referralDate]
+            ,[removeHoldTypeID]
+            ,[remHoldDate]
+            FROM [tblISTwaitlistArchive]
+            
+            UNION
+            
+            SELECT DISTINCT [ClientID]
+            ,[referralDate]
+            ,[removeHoldTypeID]
+            ,[remHoldDate]
+            FROM [tblISTwaitlistEntry]
+            WHERE remHoldDate IS NOT NULL")
+
+
+start <- as.Date('2016-01-27')
+end <- as.Date('2020-12-31')
+
+days <- seq(start, end, 'day')
+
+df <- merge(df, days, by = NULL)
+colnames(df)[5] <- 'day'
+
+df <- 
+  df %>% 
+    filter(day >= referralDate & day <= remHoldDate) %>% 
+    group_by(day) %>% 
+    summarise(count = n(), .groups = 'drop')
+
+# Add days with no one on the waitlist
+rows <- data.frame(day = days[which(!(days %in% df$day))], count = 0)
+df <- rbind(df, rows) %>% arrange(day)
+df <- df %>% filter(day <= end)
+
+df <- 
+  df %>% 
+    mutate(yr.qtr = as.yearqtr(day)) %>% 
+    group_by(yr.qtr) %>% 
+    summarise(avg = round(mean(count)), .groups = 'drop')
+
+#### Plot ####
+
+# Pull quarter info to label x-axis
+qtrs <- df %>% arrange(yr.qtr) %>% pull(yr.qtr) %>% unique() %>% quarters()
+
+# Define levels so that we can convert quarters to factors
+levels <- df %>% arrange(yr.qtr) %>% mutate(yr.qtr = as.character(yr.qtr)) %>% pull(yr.qtr)
+
+# Convert quarters to factors
+df <- df %>% mutate(yr.qtr= factor(as.character(yr.qtr), levels = levels))
+
+# Define dataframe to place the year labels into the graph
+dates = data.frame(x = c(2.5, 6.5, 10.5, 14.5, 18.5), y = c(10,10,10,10,10), 
+                   label = c('2016','2017','2018','2019','2020'))
+
+
+
 ################### Connection to CCS ############################
 con <- dbConnect(odbc(), Driver = "SQL Server", Server = "SQL-HQ", 
                  Database = "SCCJU", Trusted_Connection = "True")
@@ -137,34 +198,61 @@ WaitListIntro<- paste0("Effective 3/13/20, Governor Wolf placed a hold on all NS
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE,fig.width=10, fig.height=4.6}
 
-#Find Removed current WL
+
+######################### ALien Plot ###############################
+title = 'Average NSH Waitlist for Philadelphia by Quarter'
+subtitle = '01/27/16 to 12/31/20'
+
+df %>% 
+  ggplot(aes(x = yr.qtr, y = avg, group = 1)) + 
+    geom_vline(xintercept = c(4.5, 8.5, 12.5, 16.5), color = 'darkgrey', size = 1) + 
+    geom_text(data = dates, mapping = aes(x = x, y = y, label = label), 
+              size = 15, color = 'lightgrey') + 
+    geom_line(size = 1, color = get_color_palette()[6]) +
+    geom_text(aes(label = avg), vjust = -1) + 
+    labs(title = title, subtitle = subtitle) +
+  geom_line(size = 1, color = get_color_palette()[4]) +
+    scale_x_discrete(breaks = levels, labels = qtrs) + 
+    ylim(c(0, max(df$avg) * 1.1)) +
+    theme_light() + 
+    theme(axis.line.y = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          axis.title = element_blank())
+
+height = 1
+width = 2.39
+
+multi = 4
+#########################################################3
+###Find Removed current WL
 WLCRem<-count(CurrentWL[which(is.na(CurrentWL$removeHoldTypeName) !=TRUE),])
 WLCRemoveTyp<-CurrentWL %>% group_by(removeHoldTypeName) %>% summarise(n= n_distinct(`ClientID#`))
 
 #Find Removed by Type All Time
-WLARemoveTyp<-ACLUAll %>% group_by(removeHoldTypeName) %>% tally()#summarise(n= n_distinct(`ClientID#`))
+WLARemoveTyp<-ACLUAll %>% group_by(removeHoldTypeName) %>% tally()#summarise(n= distinct(`ClientID#`))
 
 ############# Average WL Census for each Quarter with Plot ##############
 
 WLADates<- ACLUAll[which(is.na(ACLUAll$removeHoldTypeName)==TRUE),]
-
-WLAAverage = data.frame()                              
-WLAAverage <- WLADates %>% group_by(waitListEffDate) %>% summarise(Total=n_distinct(`ClientID#`))
-WLAAverage <- merge.data.frame(AllWLDates,WLAAverage, all.x = TRUE)
-WLAAverage$Total[is.na(WLAAverage$Total)==TRUE]<- 0
-WLAAverage<- WLAAverage %>% group_by(YearQtr)%>%summarise(Average=mean(Total))
-PlotWLAvTitle<- paste0("Average Waitlist for Philadelphia by Quarter",
-                       "\n01/27/16 to ",format(WLDate,"%m/%d/%y"))
-
-PlotWLAverage<-ggplot(WLAAverage, aes(WLAAverage$YearQtr,WLAAverage$Average, group = 1)) +
-geom_line(color="blue")+
-  geom_text(aes(label=round(WLAAverage$Average)),position=position_dodge(width=1),vjust=-.5,color = "Blue4")+
-  ggtitle(PlotWLAvTitle)+
-  xlab("Average Waitlist Count")+ylab("Philadelphians")+
-theme_minimal() +
-  theme(plot.title=element_text( hjust=.5, vjust=0.5, face='bold'))
-WLAverageFig<-paste0("Figure 1. Average number of Philadelphians on the NSH waitlist by quarter from 01/27/16 to ",format(WLDate,"%m/%d/%y"),".")
-PlotWLAverage
+##
+##WLAAverage = data.frame()                              
+##WLAAverage <- WLADates %>% group_by(waitListEffDate) %>% summarise(Total=n_distinct(`ClientID#`))
+##WLAAverage <- merge.data.frame(AllWLDates,WLAAverage, all.x = TRUE)
+##WLAAverage$Total[is.na(WLAAverage$Total)==TRUE]<- 0
+##WLAAverage<- WLAAverage %>% group_by(YearQtr)%>%summarise(Average=mean(Total))
+##PlotWLAvTitle<- paste0("Average Waitlist for Philadelphia by Quarter",
+##                       "\n01/27/16 to ",format(WLDate,"%m/%d/%y"))
+##
+##PlotWLAverage<-ggplot(WLAAverage, aes(WLAAverage$YearQtr,WLAAverage$Average, group = 1)) +
+##geom_line(color="blue")+
+##  geom_text(aes(label=round(WLAAverage$Average)),position=position_dodge(width=1),vjust=-.5,color = ##"Blue4")+
+##  ggtitle(PlotWLAvTitle)+
+##  xlab("Average Waitlist Count")+ylab("Philadelphians")+
+##theme_minimal() +
+##  theme(plot.title=element_text( hjust=.5, vjust=0.5, face='bold'))
+WLAverageFig<-paste0("Figure 1. Average number of Philadelphians on the NSH waitlist by quarter from ###01/27/16 to ",format(WLDate,"%m/%d/%y"),".")
+##PlotWLAverage
 ```
 
 ### `r WLAverageFig`
