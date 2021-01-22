@@ -1,7 +1,7 @@
 ---
 title:  "`r knitr::include_graphics('PNGs/DBHIDS-logos.png')`  \n &nbsp;  \n &nbsp;  \nDBHIDS Support for the Commonwealths Response to ACLU Litigation"
 author: MONTHLY SNAPSHOT OF 
-date: "`r enddt<-'2020-11-30'
+date: "`r enddt<-'2020-12-31'
         format(as.Date(enddt), '%B %Y')`" 
 output: 
      word_document:
@@ -38,7 +38,7 @@ library(ggpmisc)
 ```
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
-enddt<-'2020-11-30'
+enddt<-'2020-12-31'
 
 ################### Alien Code ###################################
 df <- fetch_query("SELECT [ClientID]
@@ -201,7 +201,7 @@ WaitListIntro<- paste0("Effective 3/13/20, Governor Wolf placed a hold on all NS
 
 ######################### ALien Plot ###############################
 title = 'Average NSH Waitlist for Philadelphia by Quarter'
-subtitle = '01/27/16 to 12/31/20'
+subtitle = paste('01/27/16 to',format(WLDate,"%m/%d/%y"))
 
 df %>% 
   ggplot(aes(x = yr.qtr, y = avg, group = 1)) + 
@@ -251,7 +251,7 @@ WLADates<- ACLUAll[which(is.na(ACLUAll$removeHoldTypeName)==TRUE),]
 ##  xlab("Average Waitlist Count")+ylab("Philadelphians")+
 ##theme_minimal() +
 ##  theme(plot.title=element_text( hjust=.5, vjust=0.5, face='bold'))
-WLAverageFig<-paste0("Figure 1. Average number of Philadelphians on the NSH waitlist by quarter from ###01/27/16 to ",format(WLDate,"%m/%d/%y"),".")
+WLAverageFig<-paste0("Figure 1. Average number of Philadelphians on the NSH waitlist by quarter from 01/27/16 to ",format(WLDate,"%m/%d/%y"),".")
 ##PlotWLAverage
 ```
 
