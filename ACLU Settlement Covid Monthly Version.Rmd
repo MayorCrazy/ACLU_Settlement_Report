@@ -1,7 +1,7 @@
 ---
 title:  "`r knitr::include_graphics('PNGs/DBHIDS-logos.png')`  \n &nbsp;  \n &nbsp;  \nDBHIDS Support for the Commonwealths Response to ACLU Litigation"
 author: MONTHLY SNAPSHOT OF 
-date: "`r enddt<-'2020-12-31'
+date: "`r enddt<-'2020-11-30'
         format(as.Date(enddt), '%B %Y')`" 
 output: 
      word_document:
@@ -38,7 +38,7 @@ library(ggpmisc)
 ```
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
-enddt<-'2020-12-31'
+enddt<-'2020-11-30'
 
 ################### Alien Code ###################################
 df <- fetch_query("SELECT [ClientID]
@@ -603,7 +603,7 @@ geom_point(size=1,alpha=0)+
 geom_text(mapping=aes(0,565),color="black",size=2.5,alpha = .4,family = "sans",hjust=0, label=paste0("- A total of ",docketindiv+162," individuals have received a docket \n  review since November of 2016.\n- As a result of this review, a total of 143 \n  individuals were then removed from the waitlist."))+
   
   ##################################### CHANGE THIS FIGURE MANUALLY ###############
-  geom_text(mapping=aes(560,615),color="black",alpha = .4,size = 2.5,family = "sans",hjust=0, label=paste0("- A total of 348 individuals have received a chart \n  review since December of 2018."))+
+  geom_text(mapping=aes(560,615),color="black",alpha = .4,size = 2.5,family = "sans",hjust=0, label=paste0("- A total of 359 individuals have received a chart \n  review since December of 2018."))+
     geom_text(mapping=aes(250,30),color="black",alpha = .4,size=2.5,family = "sans",hjust=0, label=paste0("- A total of ",PDPtoCommunity$n," individuals have been returned to the community from PDP \n through FST intervention."))+
     
   geom_text(mapping=aes(120,1000),color="black",family = "sans",fontface="bold",size=3,hjust=0, label=paste0("Court Docket Review"))+
