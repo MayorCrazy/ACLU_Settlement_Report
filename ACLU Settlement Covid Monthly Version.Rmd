@@ -1,7 +1,7 @@
 ---
 title:  "`r knitr::include_graphics('PNGs/DBHIDS-logos.png')`  \n &nbsp;  \n &nbsp;  \nDBHIDS Support for the Commonwealths Response to ACLU Litigation"
 author: MONTHLY SNAPSHOT OF 
-date: "`r enddt<-'2020-11-30'
+date: "`r enddt<-'2021-01-31'
         format(as.Date(enddt), '%B %Y')`" 
 output: 
      word_document:
@@ -38,7 +38,11 @@ library(ggpmisc)
 ```
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
-enddt<-'2020-11-30'
+
+###################                  ############################
+################### CHANGE THIS DATE ############################
+###################                  ############################
+enddt<-'2021-01-31'
 
 ################### Alien Code ###################################
 df <- fetch_query("SELECT [ClientID]
@@ -58,7 +62,8 @@ df <- fetch_query("SELECT [ClientID]
 
 
 start <- as.Date('2016-01-27')
-end <- as.Date('2020-12-31')
+end <- as.Date(enddt)
+
 
 days <- seq(start, end, 'day')
 
@@ -205,7 +210,7 @@ subtitle = paste('01/27/16 to',format(WLDate,"%m/%d/%y"))
 
 df %>% 
   ggplot(aes(x = yr.qtr, y = avg, group = 1)) + 
-    geom_vline(xintercept = c(4.5, 8.5, 12.5, 16.5), color = 'darkgrey', size = 1) + 
+    geom_vline(xintercept = c(4.5, 8.5, 12.5, 16.5,20.5), color = 'darkgrey', size = 1) + 
     geom_text(data = dates, mapping = aes(x = x, y = y, label = label), 
               size = 15, color = 'lightgrey') + 
     geom_line(size = 1, color = get_color_palette()[6]) +
@@ -533,9 +538,11 @@ PDPtoCommunity<- ALLDC[which(ALLDC$NSHLoc.x =="Philadelphia County Jail" &
                                     ALLDC$NSHLoc.y!="homeless" &
                                     ALLDC$NSHLoc.y!="Carelink - STAR I"& 
                                     ALLDC$NSHLoc.y!="Philadelphia County Jail" &
-                                    ALLDC$NSHLoc.y!="Nursing Home" 
+                                    ALLDC$NSHLoc.y!="Nursing Home" &
+                                    ALLDC$Discharge <= enddt
                                  
                                ),]
+
 
 PDPtoCommunity <- PDPtoCommunity %>% group_by(NSHLoc.x) %>% tally() #PDPtoCommunity$NSHLoc.x
 PDPtoCommunity$Type<-"PDP to Community"
@@ -603,7 +610,7 @@ geom_point(size=1,alpha=0)+
 geom_text(mapping=aes(0,565),color="black",size=2.5,alpha = .4,family = "sans",hjust=0, label=paste0("- A total of ",docketindiv+162," individuals have received a docket \n  review since November of 2016.\n- As a result of this review, a total of 143 \n  individuals were then removed from the waitlist."))+
   
   ##################################### CHANGE THIS FIGURE MANUALLY ###############
-  geom_text(mapping=aes(560,615),color="black",alpha = .4,size = 2.5,family = "sans",hjust=0, label=paste0("- A total of 359 individuals have received a chart \n  review since December of 2018."))+
+  geom_text(mapping=aes(560,615),color="black",alpha = .4,size = 2.5,family = "sans",hjust=0, label=paste0("- A total of 371 individuals have received a chart \n  review since December of 2018."))+
     geom_text(mapping=aes(250,30),color="black",alpha = .4,size=2.5,family = "sans",hjust=0, label=paste0("- A total of ",PDPtoCommunity$n," individuals have been returned to the community from PDP \n through FST intervention."))+
     
   geom_text(mapping=aes(120,1000),color="black",family = "sans",fontface="bold",size=3,hjust=0, label=paste0("Court Docket Review"))+
@@ -801,11 +808,12 @@ Stepdownsummary<-data.frame(Placement,StepdownLocations,TotalBeds,Census,Stepdow
 Stepdownsummary$`Individuals Identified*`<-0
 colnames(Stepdownsummary)<-c('LOC','Placement','Total Beds', 'Beds Filled', 'Individuals Stepped Down','Individuals Identified*')
 
-CRRTable = data.frame(matrix(nrow=7, ncol=6))
+CRRTable = data.frame(matrix(nrow=9, ncol=6))
 colnames(CRRTable)<-colnames(Stepdownsummary)
-CRRTable$Placement<-c("HH - Farmhouse","Merakey - Fisher's Lane","RHD - Heart","RHD - Kailo","Carelink - STAR","Carelink - STAR Stepdown","SouthWest Recovery House")
-CRRTable$`Total Beds`<-c(3,4,4,4,4,4,6)
-CRRTable$LOC<-c("CRR","CRR","CRR","CRR","CRR","CRR","Recovery House")
+CRRTable$Placement<-c("HH - Farmhouse","Merakey - Fisher's Lane","RHD - Heart","RHD - Kailo","Carelink - STAR","Carelink - STAR Stepdown","Wister Street I","Wister Street II","SouthWest Recovery House")
+############################ WISTER UPDATE!!!!!!!!!!!!!!!!!!!!!!!!!!
+CRRTable$`Total Beds`<-c(4,4,4,4,4,4,99,99,6)
+CRRTable$LOC<-c("CRR","CRR","CRR","CRR","CRR","CRR","CRR","CRR","Recovery House")
 CRRTable$`Individuals Identified*`<-0
 CRRTable$`Beds Filled`<-0
 CRRTable$`Individuals Stepped Down`<-0
@@ -827,7 +835,8 @@ PlacementTable<-bg(PlacementTable, bg='burlywood2',3:6,)
 PlacementTable<-bg(PlacementTable, bg='burlywood',7:8,)
 PlacementTable<-bg(PlacementTable, bg='lightpink1',9:12,)
 PlacementTable<-bg(PlacementTable, bg='lightpink2',13:14,)
-PlacementTable<-bg(PlacementTable, bg='khaki1',15:15,)
+PlacementTable<-bg(PlacementTable, bg='lightpink3',15:16,)
+PlacementTable<-bg(PlacementTable, bg='khaki1',17:17,)
 PlacementTable<-fontsize(PlacementTable,part='all',size=9)
 PlacementTable<-autofit(PlacementTable)
 PlacementTable<-padding(PlacementTable,padding =.5,part='all')
