@@ -812,7 +812,7 @@ CRRTable = data.frame(matrix(nrow=9, ncol=6))
 colnames(CRRTable)<-colnames(Stepdownsummary)
 CRRTable$Placement<-c("HH - Farmhouse","Merakey - Fisher's Lane","RHD - Heart","RHD - Kailo","Carelink - STAR","Carelink - STAR Stepdown","Wister Street I","Wister Street II","SouthWest Recovery House")
 ############################ WISTER UPDATE!!!!!!!!!!!!!!!!!!!!!!!!!!
-CRRTable$`Total Beds`<-c(4,4,4,4,4,4,99,99,6)
+CRRTable$`Total Beds`<-c(4,4,4,4,4,4,16,9,6)
 CRRTable$LOC<-c("CRR","CRR","CRR","CRR","CRR","CRR","CRR","CRR","Recovery House")
 CRRTable$`Individuals Identified*`<-0
 CRRTable$`Beds Filled`<-0
