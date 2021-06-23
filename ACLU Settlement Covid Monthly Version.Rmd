@@ -1,7 +1,7 @@
 ---
 title:  "`r knitr::include_graphics('PNGs/DBHIDS-logos.png')`  \n &nbsp;  \n &nbsp;  \nDBHIDS Support for the Commonwealths Response to ACLU Litigation"
 author: MONTHLY SNAPSHOT OF 
-date: "`r enddt<-'2021-02-28'
+date: "`r enddt<-'2021-04-30'
         format(as.Date(enddt), '%B %Y')`" 
 output: 
      word_document:
@@ -42,7 +42,7 @@ library(ggpmisc)
 ###################                  ############################
 ################### CHANGE THIS DATE ############################
 ###################                  ############################
-enddt<-'2021-02-28'
+enddt<-'2021-03-31'
 
 ################### Alien Code ###################################
 df <- fetch_query("SELECT [ClientID]
@@ -600,6 +600,24 @@ docketindiv<-docketindiv[c(1)]
 docketindiv<-docketindiv %>% distinct() %>% count()
 
 docketlookups <- docketlookups %>% distinct()
+
+ChartReviews<- fetch_query("select client.ClientID#
+	,screen.triageClinicianID
+	,screen.chartRevAssigned
+	,screen.dateCompleted
+from tblTriageScreening as Screen
+join tblClient as Client on Client.ClientID# = screen.clientID
+
+where Screen.chartRevAssigned is not null 
+and Screen.dateCompleted is not null
+and client.FirstName not like '%test%'
+and client.LastName not like '%test%'
+and client.deleted = 0
+
+group by client.ClientID#,screen.triageClinicianID,screen.chartRevAssigned,screen.dateCompleted")
+
+ChartReviews<- ChartReviews %>% filter(as.Date(dateCompleted)<=enddt) %>% tally()
+
 ggplot(data=plo,aes(x=x,y=y))+
   background_image(img)+
 theme_void()+
@@ -609,9 +627,8 @@ theme_void()+
   
 geom_point(size=1,alpha=0)+
 geom_text(mapping=aes(0,565),color="black",size=2.5,alpha = .4,family = "sans",hjust=0, label=paste0("- A total of ",docketindiv+162," individuals have received a docket \n  review since November of 2016.\n- As a result of this review, a total of 143 \n  individuals were then removed from the waitlist."))+
-  
-  ##################################### CHANGE THIS FIGURE MANUALLY ###############
-  geom_text(mapping=aes(560,615),color="black",alpha = .4,size = 2.5,family = "sans",hjust=0, label=paste0("- A total of 364 individuals have received a chart \n  review since December of 2018."))+
+
+  geom_text(mapping=aes(560,615),color="black",alpha = .4,size = 2.5,family = "sans",hjust=0, label=paste0("- A total of ",ChartReviews," individuals have received a chart \n  review since December of 2018."))+
     geom_text(mapping=aes(250,30),color="black",alpha = .4,size=2.5,family = "sans",hjust=0, label=paste0("- A total of ",PDPtoCommunity$n," individuals have been returned to the community from PDP \n through FST intervention."))+
     
   geom_text(mapping=aes(120,1000),color="black",family = "sans",fontface="bold",size=3,hjust=0, label=paste0("Court Docket Review"))+
@@ -848,12 +865,18 @@ PlacementTable<-padding(PlacementTable,padding =.5,part='all')
 `r PlacementTable`
 
 ### *Clinically assessed and identified as appropriate for this placement at this level of care.
+### **As of February 2021, the definition of a step down was reviewed and updated. The updated definition generated new numbers for the individuals stepped down, which produced the numbers listed above. The current definition of a step down a lower level of care than the current placement. Jail or Prison is not considered a lower level of care.  
+
 
 #### ACLU Funded Placement Summary
 ***
-DBHIDS established the programs listed above for Philadelphians committed to NSH, on the Forensic Waitlist at PDP, or at risk of commitment to NSH. In March 2020, all these programs took immediate action to respond to the COVID-19 pandemic. Program responses included educating residents about COVID-19, temporarily suspending all community outings, having each resident’s support system communicate by phone and not visit in person, establishing plans to quarantine residents who were exposed to COVID-19, setting aside beds to quarantine people, having non-direct care staff work from home, having staff isolate themselves at home if exposed to the virus, and providing appropriate personal protective equipment. In March and November 2020, some of the providers listed above had to pause admissions because a resident or staff person tested positive for COVID-19. For example, on 11/16/20, the Girard Recovery Center paused admissions due to the resurgence of COVID-19 and resumed admissions on 12/23/20. 
+DBHIDS established the programs listed above for Philadelphians committed to NSH, on the Forensic Waitlist at PDP, or at risk of commitment to NSH. In March 2020, all these programs took immediate action to respond to the COVID-19 pandemic. Program responses included educating residents about COVID-19, temporarily suspending all community outings, having each resident’s support system communicate by phone and not visit in person, establishing plans to quarantine residents who were exposed to COVID-19, setting aside beds to quarantine people, having non-direct care staff work from home, having staff isolate themselves at home if exposed to the virus, and providing appropriate personal protective equipment. In March and November 2020, some of the providers listed above had to pause admissions because a resident or staff person tested positive for COVID-19. For example, on 11/16/20, the Girard Recovery Center paused admissions due to the resurgence of COVID-19 and resumed admissions on 12/23/20. In January and February of 2021, many of the programs listed above worked to access the COVID-19 vaccine for staff and residents. 
 
-DBHIDS provided guidance and support to the providers during this difficult time. For example, DBHIDS worked with providers to support residents who did not follow quarantine rules. In addition, DBHIDS continued to engage Philadelphians at NSH and on the Forensic Waitlist at PDP to identify those appropriate for these levels of care and prepare them for a successful transition back to the community. To enhance DBHIDS’s capability to engage Philadelphians at NSH given the restrictions imposed by COVID-19, DBHIDS and NSH drafted a protocol for DBHIDS to conduct telehealth assessments with Philadelphians at NSH, and assessments have resumed in a virtual format to guide discharge planning. Discharges from NSH are facilitated by the fact that NSH tests all individuals for COVID-19 prior to discharge. In addition, in December, NSH began receiving shipments of the COVID-19 vaccine and started to offer the vaccine to NSH staff as well as Philadelphians at NSH.
+\newpage 
 
+#### ACLU Funded Placement Summary (Continued)
+***
+DBHIDS provided guidance and support to the providers during this difficult time. For example, DBHIDS worked with providers to support residents who did not follow quarantine rules. In addition, DBHIDS continued to engage Philadelphians at NSH and on the Forensic Waitlist at PDP to identify those appropriate for these levels of care and prepare them for a successful transition back to the community. To enhance DBHIDS’s capability to engage Philadelphians at NSH given the restrictions imposed by COVID-19, DBHIDS and NSH drafted a protocol for DBHIDS to conduct telehealth assessments with Philadelphians at NSH, and assessments have resumed in a virtual format to guide discharge planning. Discharges from NSH are facilitated by the fact that NSH tests all individuals for COVID-19 prior to discharge. In addition, in December, NSH began receiving shipments of the COVID-19 vaccine and started to offer the vaccine to NSH staff as well as Philadelphians at NSH. 
 
+With the support of OMHSAS, DBHIDS is in the process of establishing an eight-bed, residential pilot program in Philadelphia which will be staffed primarily by Certified Peers. This peer-run crisis residence will support individuals who are involved with the criminal justice system and who without additional supports are at risk of experiencing a mental health crisis following release from incarceration or forensic hospitalization.
 
