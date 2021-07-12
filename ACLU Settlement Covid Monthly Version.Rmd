@@ -241,27 +241,16 @@ WLARemoveTyp<-ACLUAll %>% group_by(removeHoldTypeName) %>% tally()#summarise(n= 
 ############# Average WL Census for each Quarter with Plot ##############
 
 WLADates<- ACLUAll[which(is.na(ACLUAll$removeHoldTypeName)==TRUE),]
-##
-##WLAAverage = data.frame()                              
-##WLAAverage <- WLADates %>% group_by(waitListEffDate) %>% summarise(Total=n_distinct(`ClientID#`))
-##WLAAverage <- merge.data.frame(AllWLDates,WLAAverage, all.x = TRUE)
-##WLAAverage$Total[is.na(WLAAverage$Total)==TRUE]<- 0
-##WLAAverage<- WLAAverage %>% group_by(YearQtr)%>%summarise(Average=mean(Total))
-##PlotWLAvTitle<- paste0("Average Waitlist for Philadelphia by Quarter",
-##                       "\n01/27/16 to ",format(WLDate,"%m/%d/%y"))
-##
-##PlotWLAverage<-ggplot(WLAAverage, aes(WLAAverage$YearQtr,WLAAverage$Average, group = 1)) +
-##geom_line(color="blue")+
-##  geom_text(aes(label=round(WLAAverage$Average)),position=position_dodge(width=1),vjust=-.5,color = ##"Blue4")+
-##  ggtitle(PlotWLAvTitle)+
-##  xlab("Average Waitlist Count")+ylab("Philadelphians")+
-##theme_minimal() +
-##  theme(plot.title=element_text( hjust=.5, vjust=0.5, face='bold'))
+
 WLAverageFig<-paste0("Figure 1. Average number of Philadelphians on the NSH waitlist by quarter from 01/27/16 to ",format(WLDate,"%m/%d/%y"),".")
-##PlotWLAverage
+
+################### Histogram Intro ######################
+histointro<-"Over the last two months, a growing portion of Philadelphians have experienced an increase in the number of days between commitment and admission to NSH. This is due to the fact that some Philadelphians are refusing to complete a COVID test while at the Philadephia Department of Prisons (PDP). For the safety of people at NSH, a COVID-19 test is a requirement for admission to NSH. When an individual at PDP does not agree to a COVID-19 test, he or she is placed on a medical hold. NSH requires people to have a COVID test in order to be scheduled for admission to NSH and upon arrival at NSH."
 ```
 
-### `r WLAverageFig`
+### `r WLAverageFig` 
+
+`r histointro`
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE,fig.width=10, fig.height=4.6}
 
@@ -326,13 +315,13 @@ PlotWLWait
 ```
 
 ### `r WLWaitFig` ^[1 In November of 2019, Figure 2 shortened each grouping to account for the substantial decrease in admission wait times. The date range was also adjusted down from 6 months to 3, to better identify more recent trends in waitlist movement.]
-```{=openxml}
-<w:p><w:r><w:br w:type="page"/></w:r></w:p>
-```
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
+############################## THIS IS HOW YOU PAGEBREAK #################
+#```{=openxml}
+#<w:p><w:r><w:br w:type="page"/></w:r></w:p>
+#```
 ############################## All WL removals#################
-
 ALLWLRemovals <-ACLUAll[which(is.na(ACLUAll$remHoldDate)==FALSE &
                                 is.na(ACLUAll$removeHoldTypeName)==FALSE &
                                 ACLUAll$remHoldDate>="2016-01-27" &
@@ -494,7 +483,9 @@ PlotNSHDischarges<-ggplot(data=Placements)+
   theme(plot.title=element_text( hjust=.5, vjust=0.5, face='bold'))
 NSHDCIntro<- paste0("The graph below shows a breakdown of where Philadelphians were placed after discharge from Norristown State Hospital as of ",format(WLDate,"%m/%d/%y"),".")
 ```  
-
+```{=openxml}
+<w:p><w:r><w:br w:type="page"/></w:r></w:p>
+```
 ## NSH Discharge Summary
 `r NSHDCIntro`
 ```{r echo=FALSE, message=FALSE, warning=FALSE,fig.width=10, fig.height=3.5}
@@ -510,10 +501,6 @@ NSHDCBullet<-paste0("Since the 1/27/16 Settlement Agreement, NSH has restored ",
 
 ### `r NSHDCFig`
 * `r NSHDCBullet`
-```{=openxml}
-<w:p><w:r><w:br w:type="page"/></w:r></w:p>
-```
-
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE,fig.width=8, fig.height=3.5}
 ##################### Placements by Origin ###############################
@@ -580,7 +567,8 @@ ComunPlaceFig<-paste0("Figure 5. All Philadelphians returned to the community fr
 
 # Section 2: Forensic Support Team
 ## FST Summary
-Formed in November 2016, the FST has taken on a wide range of efforts to improve the treatment and systemic management of Philadelphia citizens who have been adjudicated Incompetent to Stand Trial (IST) and are in jail waiting to be admitted to NSH. Due to progress on the Forensic Waitlist, low numbers of people waiting, dramatically decreased wait times, and systemic changes, FST has reorganized and joined with the NSH team to flexibly respond to the needs of the population. FST focuses its efforts on conducting docket reviews, advocating for people in mental health court, completing clinical as well as legal reviews, educating people (including lawyers and clinicians) about being on the waitlist and at NSH, and supporting individuals prior to and after re-entry to the community.  
+Formed in November 2016, the FST has taken on a wide range of efforts to improve the treatment and systemic management of Philadelphia citizens who have been adjudicated Incompetent to Stand Trial (IST) and are in jail waiting to be admitted to NSH. Due to progress on the Forensic Waitlist, low numbers of people waiting, dramatically decreased wait times, and systemic changes, FST has reorganized and joined with the NSH team to flexibly respond to the needs of the population. FST focuses its efforts on conducting docket reviews, advocating for people in mental health court, completing clinical as well as legal reviews, educating people (including lawyers and clinicians) about being on the waitlist and at NSH, and supporting individuals prior to and after re-entry to the community. 
+
 ```{r image_with_text, echo=FALSE, message=FALSE, warning=FALSE, fig.width=7.5, fig.height=4}
 img<-readPNG('PNGs/FST.png')
 plo<-rbind(
